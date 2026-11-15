@@ -19,8 +19,16 @@ const HEAD = ['ts', 'received', 'uid', 'sid', 'event', 'segment', 'channel', 'cr
 const MAX_BATCH = 200;      // events accepted per POST
 const MAX_RETURN = 20000;   // most recent events returned to the dashboard
 
+function ss_() {
+  // Bound script (Extensions → Apps Script): uses its sheet. Standalone script: set Script Property SHEET_ID.
+  const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  const ss = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActive();
+  if (!ss) throw new Error('No spreadsheet: create the script from the Sheet (Extensions → Apps Script) or set Script Property SHEET_ID');
+  return ss;
+}
+
 function sheet_() {
-  const ss = SpreadsheetApp.getActive();
+  const ss = ss_();
   let sh = ss.getSheetByName(SHEET);
   if (!sh) {
     sh = ss.insertSheet(SHEET);
@@ -64,11 +72,15 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  try { return doGet_(e); } catch (err) { return json_({ ok: false, error: String(err && err.message || err) }); }
+}
+
+function doGet_(e) {
   const p = (e && e.parameter) || {};
   const action = p.action || 'events';
   const props = PropertiesService.getScriptProperties();
 
-  if (action === 'ping') return json_({ ok: true });
+  if (action === 'ping') return json_({ ok: true, sheet: ss_().getName(), rows: Math.max(0, sheet_().getLastRow() - 1) });
 
   if (action === 'reset') {
     const key = props.getProperty('ADMIN_KEY');
@@ -76,7 +88,7 @@ function doGet(e) {
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
     try {
-      const ss = SpreadsheetApp.getActive();
+      const ss = ss_();
       const sh = sheet_();
       const n = sh.getLastRow() - 1;
       let archived = 0;
