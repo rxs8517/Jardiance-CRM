@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARDIANCE CRM Re-engagement · Segment Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ezd:#0D1F2D; --ezg:#1DB954; --teal:#0a8a82; --tealL:#d6efec; --tealXL:#eef8f7; --navy2:#123e5c;
+  --bg:#f3f5f7; --surf:#ffffff; --ink:#1d2a35; --ink2:#46535f; --mut:#6b7884; --line:#e1e6ea;
+  --s1:#00897b; --s2:#c77700;                 /* validated categorical pair (email / sms) */
+  --bar:#00897b; --track:#e8eef0; --crit:#c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:var(--teal)}
+.top{background:var(--ezd);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+.brand{font-weight:800;font-size:15px}.brand b{color:var(--ezg)}
+.sep{width:1px;height:22px;background:rgba(255,255,255,.2)}
+.ttl{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.src{white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12px;background:rgba(255,255,255,.08);border-radius:20px;padding:5px 11px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ezg)}
+.dot.local{background:#ffc629}
+.dot.err{background:#ff6b5b}
+.live .dot{animation:pu 1.6s infinite}
+@keyframes pu{0%{box-shadow:0 0 0 0 rgba(29,185,84,.6)}70%{box-shadow:0 0 0 8px rgba(29,185,84,0)}100%{box-shadow:0 0 0 0 rgba(29,185,84,0)}}
+.tact{margin-left:auto;display:flex;gap:7px;align-items:center;flex:none}
+.tbtn{white-space:nowrap;border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:600;color:#fff;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.tbtn:hover{background:rgba(255,255,255,.08)}
+.tbtn.red{border-color:#ff8b7e;color:#ffb4ab}
+.tbtn.on{background:rgba(29,185,84,.18);border-color:var(--ezg)}
+.wrap{max-width:1440px;margin:0 auto;padding:18px 24px 40px}
+.sub{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--tealXL);border:1px solid #bfe3df;color:#0b4f4b;border-radius:20px;padding:3px 10px;font-weight:600;font-size:12px}
+.chip button{font-weight:800;color:#0b4f4b}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--mut);font-weight:600}
+.kpi .v{font-size:28px;font-weight:800;color:var(--ink);margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .h{font-size:11.5px;color:var(--mut);margin-top:2px}
+.grid{display:grid;grid-template-columns:minmax(440px,1.15fr) 1fr;gap:16px;align-items:start}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px}
+.ph{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ph h2{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mut)}
+.ph .n{width:20px;height:20px;border-radius:50%;background:var(--ezd);color:#fff;font-size:10.5px;display:grid;place-items:center;font-weight:700}
+.ph .r{margin-left:auto;font-size:12px;color:var(--mut)}
+/* segment list (mirrors the console's Jump-to-a-segment layout) */
+.grp{font-size:12.5px;font-weight:700;color:var(--navy2);margin:12px 0 6px}
+.grp:first-of-type{margin-top:0}
+.colh{display:grid;grid-template-columns:1fr 150px 50px 60px 60px;gap:10px;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);padding:0 12px 6px}
+.colh span:not(:first-child){text-align:right}
+.seg{display:grid;grid-template-columns:1fr 150px 50px 60px 60px;gap:10px;align-items:center;width:100%;border:1.5px solid var(--line);border-radius:11px;padding:8px 12px;text-align:left;margin-bottom:6px;transition:.12s;position:relative}
+.seg:hover{border-color:#b9c6cf}
+.seg.on{border-color:var(--teal);background:var(--tealXL)}
+.seg .nm{display:flex;align-items:center;gap:9px;font-size:13.5px;min-width:0}
+.seg .nm span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.id{font-size:10.5px;font-weight:800;background:#eef1f4;color:var(--mut);border-radius:6px;padding:3px 6px;min-width:34px;text-align:center;flex:none}
+.seg.on .id{background:var(--teal);color:#fff}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.num.m{color:var(--mut);font-weight:500}
+.barw{height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.barw i{display:block;height:100%;background:var(--bar);border-radius:0 4px 4px 0;transition:width .4s}
+.seg.none .id{background:#fff3e6;color:#8a5200}
+/* funnel */
+.fun{display:flex;flex-direction:column;gap:7px}
+.fr{display:grid;grid-template-columns:150px 1fr 54px 48px;gap:10px;align-items:center;font-size:12.5px;position:relative}
+.fr .fl{color:var(--ink2)}
+.fr .fb{height:20px;background:var(--track);border-radius:5px;overflow:hidden}
+.fr .fb i{display:block;height:100%;background:var(--bar);border-radius:0 5px 5px 0;transition:width .4s}
+.fr .fv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.fr .fp{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+/* split */
+.split{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px;margin:4px 0 10px;background:var(--surf)}
+.split i{display:block;height:100%}
+.legend{display:flex;gap:18px;font-size:12.5px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend b{color:var(--ink);font-variant-numeric:tabular-nums}
+.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+/* top list */
+.tl{display:flex;flex-direction:column;gap:6px}
+.tr{display:grid;grid-template-columns:1fr 120px 40px;gap:10px;align-items:center;font-size:12.5px}
+.tr .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.empty{color:var(--mut);font-size:13px;font-style:italic;padding:6px 0}
+/* log */
+.lf{display:flex;gap:8px;align-items:center;margin-left:auto}
+.lf select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+td{padding:7px 8px;border-bottom:1px solid #f0f3f5;vertical-align:top}
+td.mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--ink2)}
+.logbox{max-height:440px;overflow:auto}
+.ev{font-weight:600}
+.segt{font-size:10.5px;font-weight:800;background:#eef1f4;border-radius:5px;padding:2px 6px;color:var(--ink2)}
+.tip{position:fixed;pointer-events:none;background:var(--ezd);color:#fff;font-size:12px;border-radius:8px;padding:7px 10px;z-index:50;display:none;line-height:1.4;max-width:260px}
+/* modal */
+.mbg{position:fixed;inset:0;background:rgba(13,31,45,.5);display:none;align-items:center;justify-content:center;z-index:60}
+.mbg.on{display:flex}
+.modal{background:#fff;border-radius:16px;width:440px;max-width:92vw;padding:22px}
+.modal h3{font-size:17px;margin-bottom:6px}
+.modal p{font-size:13.5px;color:var(--ink2);line-height:1.5;margin-bottom:12px}
+.modal input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.modal .row{display:flex;gap:8px;justify-content:flex-end}
+.b{border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px}
+.b.p{background:var(--teal);color:#fff}
+.b.d{background:var(--crit);color:#fff}
+.b.g{border:1px solid var(--line)}
+.err{color:var(--crit);font-size:12.5px;margin:-4px 0 10px;min-height:16px}
+.toast{opacity:0;position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ezd);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;transition:.3s;z-index:70}
+.toast.on{transform:translateX(-50%);opacity:1}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script src="config.js"></script>
+<header class="top">
+  <div class="brand">EZ<b>Script</b></div><div class="sep"></div>
+  <div class="ttl">JARDIANCE Re-engagement · Segment Tracking</div>
+  <span class="src" id="src"><span class="dot"></span><span id="srcTxt">Connecting…</span></span>
+  <div class="tact">
+    <button class="tbtn on" id="autoBtn" title="Refresh automatically">● Auto</button>
+    <button class="tbtn" id="refreshBtn">↻ Refresh</button>
+    <button class="tbtn" id="csvBtn">CSV</button>
+    <button class="tbtn" id="srcBtn">Data source</button>
+    <a class="tbtn" href="index.html" target="_blank" rel="noopener">Experience ↗</a>
+    <button class="tbtn red" id="restartBtn">⟲ Restart</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="sub"><span id="since">—</span><span>·</span><span id="updated">—</span><span id="filterChip"></span></div>
+  <section class="kpis" id="kpis"></section>
+  <div class="grid">
+    <div>
+      <section class="panel">
+        <div class="ph"><span class="n">1</span><h2>Users by segment</h2><span class="r">Click a segment to filter everything else</span></div>
+        <div class="colh"><span>Segment</span><span>Share of segmented</span><span>Users</span><span>Interact.</span><span>Enrolled</span></div>
+        <div id="segs"></div>
+      </section>
+    </div>
+    <div>
+      <section class="panel">
+        <div class="ph"><span class="n">2</span><h2>Journey funnel</h2><span class="r" id="funScope">All users</span></div>
+        <div class="fun" id="funnel"></div>
+      </section>
+      <section class="panel">
+        <div class="ph"><span class="n">3</span><h2>Entry channel</h2><span class="r">Users by first link opened</span></div>
+        <div id="channel"></div>
+      </section>
+      <section class="panel">
+        <div class="ph"><span class="n">4</span><h2>Top interactions</h2><span class="r">Tiles, messages &amp; actions</span></div>
+        <div class="tl" id="top"></div>
+      </section>
+    </div>
+  </div>
+  <section class="panel">
+    <div class="ph"><span class="n">5</span><h2>Interaction log</h2>
+      <div class="lf"><select id="evFilter"><option value="">All events</option></select><select id="pvFilter"><option value="hide">Hide page views</option><option value="show">Show page views</option></select></div></div>
+    <div class="logbox"><table><thead><tr><th>Time</th><th>User</th><th>Segment</th><th>Event</th><th>Detail</th><th>Channel</th></tr></thead><tbody id="log"></tbody></table></div>
+  </section>
+</main>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<div class="mbg" id="mRestart"><div class="modal">
+  <h3>Restart tracking?</h3>
+  <p id="restartMsg"></p>
+  <div id="keyWrap"><input id="adminKey" type="password" placeholder="Admin key (ADMIN_KEY in Apps Script)"></div>
+  <div class="err" id="restartErr"></div>
+  <div class="row"><button class="b g" data-close>Cancel</button><button class="b d" id="restartGo">Restart from zero</button></div>
+</div></div>
+
+<div class="mbg" id="mSrc"><div class="modal">
+  <h3>Data source</h3>
+  <p>Paste the Google Apps Script web-app URL (ends in <code>/exec</code>) to read events from every user. Leave blank to use this browser only. This override applies to this browser; for all users, set <code>endpoint</code> in <code>config.js</code>.</p>
+  <input id="srcInput" placeholder="https://script.google.com/macros/s/…/exec">
+  <div class="row"><button class="b g" data-close>Cancel</button><button class="b p" id="srcSave">Save</button></div>
+</div></div>
+
+<script>
+/* ===================== config & labels ===================== */
+const SEGS=[
+  {g:'Generic',id:'S1',n:'Unknown support'},
+  {g:'Type 2 Diabetes · Patient',id:'S2a',n:'Had savings card'},{id:'S2b',n:'No savings card'},
+  {g:'Heart Failure · Patient',id:'S3a',n:'Had savings card'},{id:'S3b',n:'No savings card'},
+  {g:'Chronic Kidney Disease · Patient',id:'S4a',n:'Had savings card'},{id:'S4b',n:'No savings card'},
+  {g:'Caregiver',id:'S5',n:'Caregiver · Type 2 Diabetes'},{id:'S6',n:'Caregiver · Heart Failure'},{id:'S7',n:'Caregiver · Chronic Kidney Disease'}
+];
+const SEGNAME=Object.fromEntries(SEGS.map(s=>[s.id,s.n]));
+const ROUTE_LABEL=r=>{
+  if(!r) return '—';
+  const C={t2d:'T2D',hf:'HF',ckd:'CKD'}, K={about:'About',second:'Section 2',jfor:'JARDIANCE for',living:'Living with'};
+  const sec={t2d:{second:'Understanding A1C'},hf:{second:'Plan Your Care'},ckd:{second:'Managing CKD'}};
+  let m;
+  if((m=r.match(/^hub-(t2d|hf|ckd)-(\w+)$/))) return (m[2]==='second'?sec[m[1]].second:K[m[2]]+' '+C[m[1]]);
+  if((m=r.match(/^art-(t2d|hf|ckd)-(\w+)-(\d+)$/))) return `Article: ${m[2]==='second'?sec[m[1]].second:K[m[2]]+' '+C[m[1]]} #${+m[3]+1}`;
+  if((m=r.match(/^art-taking-(\d+)$/))) return `Article: Taking JARDIANCE #${+m[1]+1}`;
+  if((m=r.match(/^cond-(\w+)$/))) return `Condition hub: ${C[m[1]]}`;
+  return ({savings:'Pricing & Savings',ddg:'Doctor Discussion Guide',taking:'Taking JARDIANCE',faqs:'FAQs',support:'Support & Resources',cg:'Caregiver Support Center',treat:'Treatment & Medication',reminder:'Reminders',pap:'Patient assistance',findcard:'Find my card',enroll:'Savings enrollment',howto:'How to use card',updateins:'Update coverage',home:'Home'})[r]||r;
+};
+const EV_LABEL={session_start:'Session started',reengagement_link_open:'Opened link',page_view:'Page view',qualifier_start:'Started questions',qualifier_skip:'Skipped questions',answer:'Answered',qualifier_complete:'Completed questions',segment_assigned:'Segment assigned',tile_click:'Tile click',personal_message_click:'Personal message click',savings_enroll_start:'Savings: started enrollment',savings_enroll_complete:'Savings: enrolled',savings_ineligible:'Savings: not eligible',savings_card_check:'Savings: card status check',savings_card_lookup:'Savings: card lookup',caregiver_share_savings:'Caregiver: shared savings link',wallet_add:'Add to Wallet',ddg_save:'Saved discussion guide',reminder_set:'Set reminder',faq_open:'Opened FAQ',isi_expand:'Expanded ISI',indication_expand:'Expanded indications',tailor_from_hub:'Tailor from condition hub',demo_jump:'Demo: jumped to segment',demo_tools_open:'Demo: opened tools',user_restart:'User restarted'};
+const NON_INTERACTION=new Set(['page_view','session_start','reengagement_link_open','segment_assigned']);
+
+/* ===================== data source ===================== */
+let ENDPOINT='';
+try{ENDPOINT=localStorage.getItem('jrd_endpoint')||''}catch(e){}
+if(!ENDPOINT&&window.JRD_TRACKING) ENDPOINT=window.JRD_TRACKING.endpoint||'';
+let EV=[], SINCE='', SEL=null, AUTO=true, timer=null, lastErr=null;
+
+async function load(){
+  try{
+    if(ENDPOINT){
+      const r=await fetch(ENDPOINT+(ENDPOINT.includes('?')?'&':'?')+'action=events&t='+Date.now());
+      const j=await r.json(); if(!j.ok) throw new Error(j.error||'Collector error');
+      EV=j.events||[]; SINCE=j.since||''; lastErr=null;
+    } else {
+      EV=JSON.parse(localStorage.getItem('jrd_log')||'[]'); SINCE=localStorage.getItem('jrd_since')||'';
+      if(SINCE) EV=EV.filter(e=>e.ts>=SINCE); lastErr=null;
+    }
+  }catch(e){lastErr=e.message||String(e)}
+  EV.sort((a,b)=>a.ts<b.ts?-1:1);
+  render();
+}
+function setSrc(){
+  const el=document.getElementById('src'), t=document.getElementById('srcTxt'), d=el.querySelector('.dot');
+  el.classList.toggle('live',AUTO&&!lastErr);
+  d.className='dot'+(lastErr?' err':ENDPOINT?'':' local');
+  t.textContent=lastErr?'Collector unreachable: '+lastErr.slice(0,40):ENDPOINT?'Live · all users (Google Sheet)':'Local · this browser only';
+}
+
+/* ===================== metrics ===================== */
+function compute(){
+  const users={};
+  for(const e of EV){
+    const u=users[e.uid]||(users[e.uid]={uid:e.uid,first:e.ts,last:e.ts,channel:e.channel,seg:'',events:[],flags:new Set()});
+    u.last=e.ts; u.events.push(e); u.flags.add(e.event);
+    // a user's segment = the one the questions (or a demo jump) put them in; enrolling later is a conversion within it
+    if(e.event==='segment_assigned'&&e.segment&&!(e.data&&e.data.how==='enrollment')) u.seg=e.segment;
+    if(e.event==='page_view') u.flags.add('pv:'+e.page);
+    if(e.event==='answer'&&e.data&&e.data.q) u.flags.add('ans:'+e.data.q);
+  }
+  // fallback: users who were segmented before segment_assigned existed
+  Object.values(users).forEach(u=>{ if(!u.seg){const s=[...u.events].reverse().find(e=>e.segment);
+    if(s&&(u.flags.has('qualifier_complete')||u.flags.has('demo_jump'))) u.seg=s.segment;} });
+  return users;
+}
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const fmt=n=>n.toLocaleString();
+
+/* ===================== render ===================== */
+function render(){
+  setSrc();
+  const U=compute(), all=Object.values(U);
+  const inScope=SEL?all.filter(u=>SEL==='none'?!u.seg:u.seg===SEL):all;
+  const scopeEv=inScope.flatMap(u=>u.events);
+  const segd=all.filter(u=>u.seg);
+  const inter=EV.filter(e=>!NON_INTERACTION.has(e.event));
+  const enrolledU=all.filter(u=>u.flags.has('savings_enroll_complete'));
+  const sessions=new Set(EV.map(e=>e.sid)).size;
+
+  document.getElementById('since').textContent=SINCE?'Tracking since '+new Date(SINCE).toLocaleString():(EV.length?'Tracking since first event '+new Date(EV[0].ts).toLocaleString():'No events yet');
+  document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();
+  document.getElementById('filterChip').innerHTML=SEL?`<span class="chip">Filtered: ${SEL==='none'?'Not yet segmented':SEL+' · '+SEGNAME[SEL]} <button id="clearSel" aria-label="Clear filter">×</button></span>`:'';
+  const cs=document.getElementById('clearSel'); if(cs) cs.onclick=()=>{SEL=null;render()};
+
+  // KPIs
+  const K=[
+    ['Users',fmt(all.length),`${fmt(sessions)} sessions`],
+    ['Segmented users',fmt(segd.length),`${pct(segd.length,all.length)}% of users`],
+    ['Question completion',pct(all.filter(u=>u.flags.has('qualifier_start')&&u.flags.has('qualifier_complete')).length,all.filter(u=>u.flags.has('qualifier_start')).length)+'%',`${fmt(all.filter(u=>u.flags.has('qualifier_skip')).length)} skipped the questions`],
+    ['Interactions',fmt(inter.length),`${all.length?(inter.length/all.length).toFixed(1):'0'} per user`],
+    ['Savings enrollments',fmt(enrolledU.length),`${fmt(all.filter(u=>u.flags.has('savings_enroll_start')).length)} started`],
+    ['Page views',fmt(EV.filter(e=>e.event==='page_view').length),'all screens']
+  ];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="h">${k[2]}</div></div>`).join('');
+
+  // Segments
+  const row=(id,name,us,cls)=>{
+    const n=us.length, ia=us.flatMap(u=>u.events).filter(e=>!NON_INTERACTION.has(e.event)).length, en=us.filter(u=>u.flags.has('savings_enroll_complete')).length;
+    const share=id==='none'?'':`${pct(n,segd.length)}%`;
+    return `<button class="seg ${cls||''} ${SEL===id?'on':''}" data-seg="${id}" data-tip="${name}: ${n} user${n===1?'':'s'}${share?' · '+share+' of segmented':''} · ${ia} interactions · ${en} enrolled">
+      <span class="nm"><span class="id">${id==='none'?'—':id}</span><span>${name}</span></span>
+      <span class="barw">${id==='none'?'':`<i style="width:${pct(n,segd.length)}%"></i>`}</span>
+      <span class="num">${fmt(n)}</span><span class="num m">${fmt(ia)}</span><span class="num m">${fmt(en)}</span></button>`;
+  };
+  let h='';
+  SEGS.forEach(s=>{ if(s.g) h+=`<div class="grp">${s.g}</div>`; h+=row(s.id,s.n,all.filter(u=>u.seg===s.id)); });
+  h+=`<div class="grp">Dropped before a segment</div>`+row('none','Not yet segmented',all.filter(u=>!u.seg),'none');
+  document.getElementById('segs').innerHTML=h;
+
+  // Funnel (unique users in scope)
+  const steps=[
+    ['Opened the experience',u=>u.flags.has('session_start')||u.events.length>0],
+    ['Started questions',u=>u.flags.has('qualifier_start')||u.flags.has('qualifier_skip')],
+    ['Answered Q1 (role)',u=>u.flags.has('ans:role')||u.flags.has('qualifier_skip')],
+    ['Segment assigned',u=>!!u.seg],
+    ['Viewed personalized home',u=>u.flags.has('pv:home')],
+    ['Clicked a tile or message',u=>u.flags.has('tile_click')||u.flags.has('personal_message_click')],
+    ['Took a savings action',u=>['savings_enroll_start','savings_card_check','savings_card_lookup','caregiver_share_savings'].some(f=>u.flags.has(f))],
+    ['Enrolled in savings',u=>u.flags.has('savings_enroll_complete')]
+  ];
+  const base=inScope.length;
+  document.getElementById('funScope').textContent=SEL?(SEL==='none'?'Not yet segmented':SEL):'All users';
+  document.getElementById('funnel').innerHTML=base?steps.map((s,i)=>{const n=inScope.filter(s[1]).length;return `<div class="fr" data-tip="${s[0]}: ${n} of ${base} users (${pct(n,base)}%)"><span class="fl">${s[0]}</span><span class="fb"><i style="width:${pct(n,base)}%"></i></span><span class="fv">${fmt(n)}</span><span class="fp">${pct(n,base)}%</span></div>`}).join(''):'<div class="empty">No users in this view yet.</div>';
+
+  // Channel split
+  const em=inScope.filter(u=>u.channel==='email').length, sm=inScope.filter(u=>u.channel==='sms').length, tot=em+sm;
+  document.getElementById('channel').innerHTML=tot?`<div class="split">${em?`<i style="width:${em/tot*100}%;background:var(--s1)" data-tip="Email: ${em} users (${pct(em,tot)}%)"></i>`:''}${sm?`<i style="width:${sm/tot*100}%;background:var(--s2)" data-tip="SMS: ${sm} users (${pct(sm,tot)}%)"></i>`:''}</div>
+    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Email <b>${fmt(em)}</b> (${pct(em,tot)}%)</span><span><i class="sw" style="background:var(--s2)"></i>SMS <b>${fmt(sm)}</b> (${pct(sm,tot)}%)</span></div>`:'<div class="empty">No users in this view yet.</div>';
+
+  // Top interactions
+  const counts={};
+  scopeEv.forEach(e=>{
+    let k=null;
+    if(e.event==='tile_click') k='Tile → '+ROUTE_LABEL(e.data&&e.data.to);
+    else if(e.event==='personal_message_click') k=`Message ${e.data&&e.data.slot} → `+ROUTE_LABEL(e.data&&e.data.to);
+    else if(!NON_INTERACTION.has(e.event)&&!['answer','qualifier_start','qualifier_complete','demo_tools_open','demo_jump','user_restart'].includes(e.event)) k=EV_LABEL[e.event]||e.event;
+    if(k) counts[k]=(counts[k]||0)+1;
+  });
+  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10), tmax=top.length?top[0][1]:1;
+  document.getElementById('top').innerHTML=top.length?top.map(t=>`<div class="tr" data-tip="${t[0]}: ${t[1]}"><span class="t">${t[0]}</span><span class="barw"><i style="width:${t[1]/tmax*100}%"></i></span><span class="num">${t[1]}</span></div>`).join(''):'<div class="empty">No clicks yet.</div>';
+
+  // Log
+  const evSel=document.getElementById('evFilter'), cur=evSel.value;
+  const types=[...new Set(EV.map(e=>e.event))].sort();
+  evSel.innerHTML='<option value="">All events</option>'+types.map(t=>`<option value="${t}" ${t===cur?'selected':''}>${EV_LABEL[t]||t}</option>`).join('');
+  const showPv=document.getElementById('pvFilter').value==='show';
+  const uidSet=SEL?new Set(inScope.map(u=>u.uid)):null;
+  const rows=EV.filter(e=>(!uidSet||uidSet.has(e.uid))&&(cur?e.event===cur:(showPv||e.event!=='page_view'))).slice(-400).reverse();
+  document.getElementById('log').innerHTML=rows.length?rows.map(e=>`<tr><td class="mono">${new Date(e.ts).toLocaleTimeString()}</td><td class="mono">${String(e.uid).slice(0,8)}</td><td>${e.segment?`<span class="segt">${e.segment}</span>`:'—'}</td><td class="ev">${EV_LABEL[e.event]||e.event}</td><td>${detail(e)}</td><td>${e.channel==='sms'?'SMS':e.channel==='email'?'Email':'—'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No events yet. Open the experience and click around.</td></tr>';
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
+function detail(e){
+  const d=e.data||{};
+  if(e.event==='page_view') return esc(ROUTE_LABEL(e.page));
+  if(e.event==='tile_click'||e.event==='personal_message_click') return '→ '+esc(ROUTE_LABEL(d.to));
+  if(e.event==='answer') return esc(d.q+': '+(Array.isArray(d.a)?d.a.join(' + '):d.a));
+  if(e.event==='segment_assigned') return esc(`${SEGNAME[e.segment]||e.segment} (via ${d.how})`);
+  if(e.event==='session_start') return esc(d.via+(d.returning?' · returning':''));
+  if(e.event==='reminder_set') return esc(`${d.type} · ${d.time} · ${d.ch}`);
+  if(e.event==='demo_jump') return esc('to '+d.to);
+  if(e.event==='faq_open') return esc(d.q);
+  return '';
+}
+
+/* ===================== interactions ===================== */
+document.addEventListener('click',e=>{
+  const s=e.target.closest('[data-seg]'); if(s){SEL=SEL===s.dataset.seg?null:s.dataset.seg;render();return}
+  if(e.target.closest('[data-close]')) e.target.closest('.mbg').classList.remove('on');
+});
+document.getElementById('evFilter').onchange=render;
+document.getElementById('pvFilter').onchange=render;
+document.getElementById('refreshBtn').onclick=()=>{load();toast('Refreshed')};
+document.getElementById('autoBtn').onclick=function(){AUTO=!AUTO;this.classList.toggle('on',AUTO);this.textContent=(AUTO?'● ':'○ ')+'Auto';schedule();setSrc()};
+function schedule(){clearInterval(timer);if(AUTO) timer=setInterval(load,ENDPOINT?10000:3000)}
+window.addEventListener('storage',e=>{if(!ENDPOINT&&(e.key==='jrd_log'||e.key==='jrd_since')) load()});
+
+// tooltip (hover layer)
+const tip=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{const t=e.target.closest('[data-tip]');if(!t){tip.style.display='none';return}tip.textContent=t.dataset.tip;tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-270)+'px';tip.style.top=(e.clientY+14)+'px'});
+
+// restart
+document.getElementById('restartBtn').onclick=()=>{
+  document.getElementById('restartMsg').textContent=ENDPOINT
+    ?'All counts go back to zero. Current events are copied to an "Archive" tab in the Google Sheet before the Events tab is cleared.'
+    :'All counts go back to zero. Events tracked in this browser so far are cleared.';
+  document.getElementById('keyWrap').style.display=ENDPOINT?'block':'none';
+  document.getElementById('restartErr').textContent='';
+  document.getElementById('mRestart').classList.add('on');
+};
+document.getElementById('restartGo').onclick=async()=>{
+  const err=document.getElementById('restartErr');
+  if(ENDPOINT){
+    const key=document.getElementById('adminKey').value.trim(); if(!key){err.textContent='Enter the admin key.';return}
+    try{const r=await fetch(ENDPOINT+(ENDPOINT.includes('?')?'&':'?')+'action=reset&key='+encodeURIComponent(key));const j=await r.json();
+      if(!j.ok){err.textContent=j.error||'Restart failed.';return} toast(`Tracking restarted · ${j.archived||0} events archived`)}
+    catch(x){err.textContent='Could not reach the collector.';return}
+  } else {
+    try{localStorage.setItem('jrd_log','[]');localStorage.setItem('jrd_since',new Date().toISOString())}catch(x){}
+    toast('Tracking restarted');
+  }
+  document.getElementById('mRestart').classList.remove('on'); SEL=null; load();
+};
+
+// data source
+document.getElementById('srcBtn').onclick=()=>{document.getElementById('srcInput').value=ENDPOINT;document.getElementById('mSrc').classList.add('on')};
+document.getElementById('srcSave').onclick=()=>{
+  const v=document.getElementById('srcInput').value.trim();
+  try{v?localStorage.setItem('jrd_endpoint',v):localStorage.removeItem('jrd_endpoint')}catch(x){}
+  ENDPOINT=v||((window.JRD_TRACKING&&window.JRD_TRACKING.endpoint)||'');
+  document.getElementById('mSrc').classList.remove('on'); schedule(); load();
+};
+
+// CSV export
+document.getElementById('csvBtn').onclick=()=>{
+  const U=compute();
+  const head=['ts','uid','sid','event','segment_at_event','user_segment','channel','crm','page','detail'];
+  const lines=[head.join(',')].concat(EV.map(e=>[e.ts,e.uid,e.sid,e.event,e.segment||'',(U[e.uid]&&U[e.uid].seg)||'',e.channel||'',e.crm||'',e.page||'',JSON.stringify(e.data||{})].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='jardiance-reengagement-events-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove();
+};
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._h);el._h=setTimeout(()=>el.classList.remove('on'),2600)}
+
+load(); schedule();
+</script>
+</body>
+</html>
