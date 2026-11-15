@@ -131,6 +131,7 @@ td.mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--in
 </header>
 
 <main class="wrap">
+  <div id="errBox" style="display:none;background:#fdecea;border:1px solid #f5b5ad;color:#8a1c12;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px"></div>
   <div class="sub"><span id="since">—</span><span>·</span><span id="updated">—</span><span id="filterChip"></span></div>
   <section class="kpis" id="kpis"></section>
   <div class="grid">
@@ -214,8 +215,10 @@ let EV=[], SINCE='', SEL=null, AUTO=true, timer=null, lastErr=null;
 async function load(){
   try{
     if(ENDPOINT){
-      const r=await fetch(ENDPOINT+(ENDPOINT.includes('?')?'&':'?')+'action=events&t='+Date.now());
-      const j=await r.json(); if(!j.ok) throw new Error(j.error||'Collector error');
+      let r; try{ r=await fetch(ENDPOINT+(ENDPOINT.includes('?')?'&':'?')+'action=events&t='+Date.now()); }
+      catch(x){ throw new Error('Google returned a page, not data. Open the collector URL + ?action=ping in a private window to see why.'); }
+      let j; try{ j=await r.json(); }catch(x){ throw new Error('Collector replied with HTML. Check the deployment (see TRACKING.md, Troubleshooting).'); }
+      if(!j.ok) throw new Error(j.error||'Collector error');
       EV=j.events||[]; SINCE=j.since||''; lastErr=null;
     } else {
       EV=JSON.parse(localStorage.getItem('jrd_log')||'[]'); SINCE=localStorage.getItem('jrd_since')||'';
@@ -226,10 +229,12 @@ async function load(){
   render();
 }
 function setSrc(){
+  const eb=document.getElementById('errBox'); eb.style.display=lastErr?'block':'none';
+  if(lastErr) eb.innerHTML='<b>Collector error:</b> '+esc(lastErr)+' <a href="'+esc(ENDPOINT)+'?action=ping" target="_blank" rel="noopener">Test the collector ↗</a>';
   const el=document.getElementById('src'), t=document.getElementById('srcTxt'), d=el.querySelector('.dot');
   el.classList.toggle('live',AUTO&&!lastErr);
   d.className='dot'+(lastErr?' err':ENDPOINT?'':' local');
-  t.textContent=lastErr?'Collector unreachable: '+lastErr.slice(0,40):ENDPOINT?'Live · all users (Google Sheet)':'Local · this browser only';
+  el.title=lastErr||''; t.textContent=lastErr?'Collector unreachable · hover for details':ENDPOINT?'Live · all users (Google Sheet)':'Local · this browser only';
 }
 
 /* ===================== metrics ===================== */
