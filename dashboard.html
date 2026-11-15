@@ -10,7 +10,7 @@
 :root{
   --ezd:#0D1F2D; --ezg:#1DB954; --teal:#0a8a82; --tealL:#d6efec; --tealXL:#eef8f7; --navy2:#123e5c;
   --bg:#f3f5f7; --surf:#ffffff; --ink:#1d2a35; --ink2:#46535f; --mut:#6b7884; --line:#e1e6ea;
-  --s1:#00897b; --s2:#c77700;                 /* validated categorical pair (email / sms) */
+  --s1:#00897b; --s2:#c77700; --s3:#5b6bd6;   /* validated categorical set: email / sms / direct */
   --bar:#00897b; --track:#e8eef0; --crit:#c0392b;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -148,7 +148,7 @@ td.mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--in
         <div class="fun" id="funnel"></div>
       </section>
       <section class="panel">
-        <div class="ph"><span class="n">3</span><h2>Entry channel</h2><span class="r">Users by first link opened</span></div>
+        <div class="ph"><span class="n">3</span><h2>Entry channel</h2><span class="r">Users by how they arrived</span></div>
         <div id="channel"></div>
       </section>
       <section class="panel">
@@ -313,9 +313,10 @@ function render(){
   document.getElementById('funnel').innerHTML=base?steps.map((s,i)=>{const n=inScope.filter(s[1]).length;return `<div class="fr" data-tip="${s[0]}: ${n} of ${base} users (${pct(n,base)}%)"><span class="fl">${s[0]}</span><span class="fb"><i style="width:${pct(n,base)}%"></i></span><span class="fv">${fmt(n)}</span><span class="fp">${pct(n,base)}%</span></div>`}).join(''):'<div class="empty">No users in this view yet.</div>';
 
   // Channel split
-  const em=inScope.filter(u=>u.channel==='email').length, sm=inScope.filter(u=>u.channel==='sms').length, tot=em+sm;
-  document.getElementById('channel').innerHTML=tot?`<div class="split">${em?`<i style="width:${em/tot*100}%;background:var(--s1)" data-tip="Email: ${em} users (${pct(em,tot)}%)"></i>`:''}${sm?`<i style="width:${sm/tot*100}%;background:var(--s2)" data-tip="SMS: ${sm} users (${pct(sm,tot)}%)"></i>`:''}</div>
-    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Email <b>${fmt(em)}</b> (${pct(em,tot)}%)</span><span><i class="sw" style="background:var(--s2)"></i>SMS <b>${fmt(sm)}</b> (${pct(sm,tot)}%)</span></div>`:'<div class="empty">No users in this view yet.</div>';
+  const CH=[['email','Email','--s1'],['sms','SMS','--s2'],['direct','Direct','--s3']].map(c=>[...c,inScope.filter(u=>(u.channel||'direct')===c[0]).length]);
+  const tot=CH.reduce((s,c)=>s+c[3],0);
+  document.getElementById('channel').innerHTML=tot?`<div class="split">${CH.filter(c=>c[3]).map(c=>`<i style="width:${c[3]/tot*100}%;background:var(${c[2]})" data-tip="${c[1]}: ${c[3]} users (${pct(c[3],tot)}%)"></i>`).join('')}</div>
+    <div class="legend">${CH.map(c=>`<span><i class="sw" style="background:var(${c[2]})"></i>${c[1]} <b>${fmt(c[3])}</b> (${pct(c[3],tot)}%)</span>`).join('')}</div>`:'<div class="empty">No users in this view yet.</div>';
 
   // Top interactions
   const counts={};
@@ -336,7 +337,7 @@ function render(){
   const showPv=document.getElementById('pvFilter').value==='show';
   const uidSet=SEL?new Set(inScope.map(u=>u.uid)):null;
   const rows=EV.filter(e=>(!uidSet||uidSet.has(e.uid))&&(cur?e.event===cur:(showPv||e.event!=='page_view'))).slice(-400).reverse();
-  document.getElementById('log').innerHTML=rows.length?rows.map(e=>`<tr><td class="mono">${new Date(e.ts).toLocaleTimeString()}</td><td class="mono">${String(e.uid).slice(0,8)}</td><td>${e.segment?`<span class="segt">${e.segment}</span>`:'—'}</td><td class="ev">${EV_LABEL[e.event]||e.event}</td><td>${detail(e)}</td><td>${e.channel==='sms'?'SMS':e.channel==='email'?'Email':'—'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No events yet. Open the experience and click around.</td></tr>';
+  document.getElementById('log').innerHTML=rows.length?rows.map(e=>`<tr><td class="mono">${new Date(e.ts).toLocaleTimeString()}</td><td class="mono">${String(e.uid).slice(0,8)}</td><td>${e.segment?`<span class="segt">${e.segment}</span>`:'—'}</td><td class="ev">${EV_LABEL[e.event]||e.event}</td><td>${detail(e)}</td><td>${e.channel==='sms'?'SMS':e.channel==='email'?'Email':'Direct'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No events yet. Open the experience and click around.</td></tr>';
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
 function detail(e){
@@ -345,7 +346,7 @@ function detail(e){
   if(e.event==='tile_click'||e.event==='personal_message_click') return '→ '+esc(ROUTE_LABEL(d.to));
   if(e.event==='answer') return esc(d.q+': '+(Array.isArray(d.a)?d.a.join(' + '):d.a));
   if(e.event==='segment_assigned') return esc(`${SEGNAME[e.segment]||e.segment} (via ${d.how})`);
-  if(e.event==='session_start') return esc(d.via+(d.returning?' · returning':''));
+  if(e.event==='session_start') return esc(d.via+(d.visit==='reload'?' · reload':''));
   if(e.event==='reminder_set') return esc(`${d.type} · ${d.time} · ${d.ch}`);
   if(e.event==='demo_jump') return esc('to '+d.to);
   if(e.event==='faq_open') return esc(d.q);
