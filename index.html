@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0a8a82">
+<title>JARDIANCE Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  JARDIANCE CRM re-engagement landing experience (EZScript Patient360).
+  Entry: link in the generic re-engagement email / SMS.
+    #email | #sms              → channel token, savings history unknown
+    #email-had | #sms-had      → CRM knows the patient had a Savings Card (Q3 skipped)
+    #email-none | #sms-none    → CRM knows no card (Q3 skipped)
+  MLR/PRC: tile titles and drug copy come from the client INTERNAL_TILES library (section refs in data-ref);
+  ISI and indications are placeholders built from current public BI materials. Replace with approved copy before use.
+-->
+<style>
+:root{
+  --teal:#0a8a82; --tealD:#077069; --tealL:#d6efec; --tealXL:#eef8f7;
+  --navy:#0d3b5c; --navy2:#123e5c; --yel:#ffc629; --bg:#f2f3f7; --ink:#1d2a35; --mut:#5d6b78;
+  --line:#dfe5ea; --warnBg:#fff8e1; --warnLn:#f5d77a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+button,input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;text-align:inherit}
+a{color:var(--teal)}
+
+/* ---------- shell: full-bleed on phones, device frame on desktop ---------- */
+.app{min-height:100%;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.sbar{display:none}
+.view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+@media (min-width:620px){
+  body{background:radial-gradient(circle at 50% 30%,#eef3f5,#d6dee3);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px 0}
+  .frame{width:414px;height:880px;max-height:calc(100vh - 48px);min-height:700px;background:#111;border-radius:58px;padding:13px;box-shadow:0 40px 80px -30px rgba(13,31,45,.55),inset 0 0 0 2px #2a2a2a}
+  .app{height:100%;min-height:0;border-radius:46px}
+  .sbar{display:flex;height:48px;flex:none;align-items:center;justify-content:space-between;padding:0 32px 0 38px;font-weight:600;font-size:15px;position:relative;background:var(--bg)}
+  .sbar .notch{position:absolute;left:50%;top:0;transform:translateX(-50%);width:150px;height:32px;background:#111;border-radius:0 0 20px 20px}
+  .view::-webkit-scrollbar{width:0}
+}
+
+/* ---------- brand chrome ---------- */
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--tealL);font-size:13px}
+.tabs a{padding:11px 0;text-align:center;color:var(--navy2);text-decoration:none}
+.tabs a+a{border-left:2px solid #fff}
+.logo{background:#fff;display:flex;justify-content:center;padding:10px 0 12px;border-bottom:2px solid var(--navy2)}
+.dh{position:sticky;top:0;z-index:5;background:var(--teal);color:#fff;display:flex;align-items:center;gap:12px;padding:14px 16px;font-size:18px;font-weight:700;line-height:1.2}
+.dh .t{flex:1}
+.dh button{display:grid;place-items:center;width:30px;height:30px;flex:none}
+
+/* ---------- start / qualifier ---------- */
+.q{padding:20px 20px 26px}
+.hero{background:linear-gradient(160deg,#0d3b5c,#0a8a82);color:#fff;border-radius:20px;padding:22px 20px;margin-bottom:18px}
+.hero h1{font-size:23px;line-height:1.22;margin-bottom:9px;font-weight:800}
+.hero p{font-size:14px;opacity:.92;line-height:1.5}
+.steps3{display:flex;gap:8px;margin-top:16px}
+.steps3 div{flex:1;background:rgba(255,255,255,.15);border-radius:12px;padding:9px 6px;font-size:11.5px;line-height:1.3;text-align:center}
+.steps3 b{display:block;font-size:17px;color:var(--yel)}
+.cta{display:block;width:100%;background:var(--teal);color:#fff;font-weight:700;font-size:16px;border-radius:28px;padding:15px;text-align:center;transition:.15s}
+.cta:active{transform:scale(.98)}
+.cta:disabled{opacity:.35;cursor:default}
+.cta.y{background:var(--yel);color:var(--ink)}
+.cta.o{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
+.lnk{display:block;text-align:center;margin-top:14px;font-size:14px;color:var(--teal);font-weight:600;width:100%}
+.priv{font-size:12px;color:var(--mut);margin-top:16px;line-height:1.45;display:flex;gap:7px}
+.prog{display:flex;gap:6px;margin-bottom:16px}
+.prog i{height:4px;flex:1;border-radius:4px;background:#d5dde3;transition:.3s}
+.prog i.on{background:var(--teal)}
+.back{font-size:13px;color:var(--mut);font-weight:600;margin-bottom:12px;display:inline-flex;align-items:center;gap:4px}
+.qk{font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--teal);text-transform:uppercase;margin-bottom:6px}
+.qh{font-size:22px;font-weight:700;color:var(--navy2);line-height:1.25;margin-bottom:6px}
+.qs{font-size:13.5px;color:var(--mut);line-height:1.45;margin-bottom:16px}
+.ans{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
+.a{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:13px 14px;display:flex;align-items:center;gap:12px;font-size:15px;font-weight:600;transition:.15s;width:100%}
+.a small{display:block;font-weight:400;color:var(--mut);font-size:12.5px;margin-top:2px}
+.a .ai{width:38px;height:38px;border-radius:50%;background:var(--tealL);display:grid;place-items:center;flex:none}
+.a.on{border-color:var(--teal);background:var(--tealXL)}
+.a .ck{margin-left:auto;width:22px;height:22px;border-radius:7px;border:1.5px solid #b9c6cf;flex:none;display:grid;place-items:center}
+.a.on .ck{background:var(--teal);border-color:var(--teal)}
+.build{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px 30px;text-align:center}
+.spin{width:64px;height:64px;border-radius:50%;border:5px solid var(--tealL);border-top-color:var(--teal);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.build h2{color:var(--navy2);font-size:19px}
+.build p{font-size:13.5px;color:var(--mut)}
+
+/* ---------- home ---------- */
+.forchip{margin:12px 16px 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:8px;font-size:12.5px;line-height:1.35}
+.forchip b{color:var(--teal)}
+.forchip button{margin-left:auto;color:var(--teal);font-weight:700;text-decoration:underline;flex:none}
+.sec{font-size:16px;font-weight:700;color:var(--navy2);margin:16px 16px 9px}
+.msg{margin:0 16px 10px;border-radius:15px;padding:13px 12px;display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.38;width:calc(100% - 32px);text-align:left}
+.msg.dark{background:linear-gradient(100deg,#0d3b5c,#0a8a82);color:#fff}
+.msg.light{background:linear-gradient(100deg,#f3f8f8,#d6efec);border:1px solid #e3ecec}
+.mi{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--tealL)}
+.msg.dark .mi{background:#e3f4f2}
+.mt{flex:1}
+.pill{background:var(--yel);color:var(--ink);font-weight:700;font-size:13px;border-radius:20px;padding:8px 12px;white-space:nowrap;flex:none}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 16px}
+.tile{background:#fff;border:1px solid #d9ecea;border-radius:13px;min-height:108px;padding:12px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:0 2px 6px rgba(13,59,92,.06);transition:.15s}
+.tile:active{transform:scale(.97)}
+.tile .ic{width:40px;height:40px;border-radius:50%;background:var(--tealL);display:grid;place-items:center}
+.tile .tl{font-size:12.5px;font-weight:600;text-align:center;line-height:1.25}
+.tile .bdg{font-size:9px;font-weight:800;background:var(--yel);border-radius:6px;padding:1px 6px;margin-top:-3px;letter-spacing:.3px}
+.also{margin:10px 16px 0;background:#fff;border:1px dashed var(--teal);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;align-items:center;gap:8px;color:var(--teal);font-weight:600;width:calc(100% - 32px)}
+
+/* ---------- content ---------- */
+.pad{padding:16px}
+.rows{display:flex;flex-direction:column;gap:9px}
+.row{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px 13px;display:flex;align-items:center;gap:11px;font-size:14px;font-weight:600;width:100%;line-height:1.3}
+.row .ri{width:34px;height:34px;border-radius:50%;background:var(--tealL);display:grid;place-items:center;flex:none}
+.row .rt{flex:1}
+.row small{display:block;font-weight:400;color:var(--mut);font-size:12px;margin-top:2px}
+.sub{font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mut);margin:18px 0 8px}
+.sub:first-child{margin-top:0}
+.art h2{font-size:21px;color:var(--navy2);line-height:1.25;margin-bottom:12px}
+.art p{font-size:15px;line-height:1.6;margin-bottom:13px}
+.art ul{margin:0 0 14px 0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.art li{font-size:14.5px;line-height:1.5;padding-left:22px;position:relative}
+.art li:before{content:"";position:absolute;left:4px;top:8px;width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px 8px;text-align:center}
+.stat b{display:block;font-size:22px;color:var(--teal);font-weight:800}
+.stat span{font-size:11.5px;color:var(--mut);line-height:1.3;display:block;margin-top:3px}
+.foot{font-size:11.5px;color:var(--mut);line-height:1.45;margin-bottom:12px}
+.note{font-size:13px;line-height:1.5;background:var(--warnBg);border:1px solid var(--warnLn);border-radius:12px;padding:11px 12px;color:#5b4a12;margin-bottom:14px}
+.note.b{background:var(--tealXL);border-color:#bfe3df;color:#0b4f4b}
+.next{margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px 14px;display:flex;align-items:center;gap:10px;width:100%}
+.next small{display:block;font-size:11px;color:var(--mut);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.next b{font-size:14px;color:var(--navy2)}
+.acc{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.acc+.acc{margin-top:8px}
+.acc>button{width:100%;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:600;font-size:14.5px;line-height:1.35}
+.acc>div{display:none;padding:0 14px 14px;font-size:14px;line-height:1.55;color:#33404b}
+.acc.open>div{display:block}
+.acc.open>button svg{transform:rotate(45deg)}
+
+/* ---------- savings ---------- */
+.card{height:196px;border-radius:18px;background:linear-gradient(120deg,#0d3b5c 0%,#0a8a82 70%,#00a19a 100%);color:#fff;padding:18px;position:relative;overflow:hidden;margin-bottom:14px;box-shadow:0 14px 30px -14px rgba(13,59,92,.6)}
+.card:after{content:"";position:absolute;right:-40px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08)}
+.card small{opacity:.85;font-size:12px}
+.card h3{font-size:19px;margin-top:2px}
+.card .cb{position:absolute;right:16px;top:16px;background:var(--yel);color:var(--ink);font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px}
+.card .cd{position:absolute;left:18px;bottom:16px;right:18px;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:11px}
+.card .cd b{display:block;font-size:14px;letter-spacing:1px;font-weight:600}
+.card .big{position:absolute;left:18px;bottom:18px;font-size:30px;font-weight:800}
+.card .big span{font-size:12px;font-weight:500;display:block;opacity:.85}
+.card.off{filter:grayscale(1);opacity:.5}
+.chk{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:12px;font-size:14px;line-height:1.4;width:100%;text-align:left}
+.chk+.chk{margin-top:8px}
+.chk .bx{width:22px;height:22px;border-radius:7px;border:1.5px solid #b9c6cf;flex:none;display:grid;place-items:center;margin-top:1px}
+.chk.on{border-color:var(--teal);background:var(--tealXL)}
+.chk.on .bx{background:var(--teal);border-color:var(--teal)}
+.fld{display:block;margin-bottom:12px}
+.fld span{display:block;font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:5px}
+.fld input,.fld textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:15px;background:#fff;outline:none}
+.fld input:focus,.fld textarea:focus{border-color:var(--teal)}
+.seg{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.seg button{flex:1;min-width:70px;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:10px 6px;font-size:13px;font-weight:600;color:var(--mut);text-align:center}
+.seg button.on{border-color:var(--teal);background:var(--tealXL);color:var(--teal)}
+.ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:10px 0 18px}
+.ok .c{width:64px;height:64px;border-radius:50%;background:var(--tealL);display:grid;place-items:center}
+.ok h2{font-size:20px;color:var(--navy2)}
+.ok p{font-size:14px;color:var(--mut);line-height:1.5}
+.btns{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.contact{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;font-size:13.5px;line-height:1.5;margin-bottom:10px}
+.contact b{color:var(--navy2)}
+
+/* ---------- ISI ---------- */
+.isi{background:#fff;margin-top:22px;border-top:1px solid var(--line)}
+.isih{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;font-weight:700;font-size:15px;color:var(--teal);width:100%;border-bottom:1px solid var(--line)}
+.isib{padding:10px 14px 4px;font-size:13px;line-height:1.5;color:#2c3640}
+.isib p{margin-bottom:8px}
+.isib ul{margin:0 0 8px 18px}
+.isib li{margin-bottom:3px}
+.isi .more{display:none}
+.isi.open .more{display:block}
+.isi.open .isih svg{transform:rotate(45deg)}
+.ind{display:none;padding:10px 14px;font-size:13px;line-height:1.5;border-bottom:1px solid var(--line)}
+.ind.open{display:block}
+.ind ul{margin:6px 0 6px 18px}
+.pc{font-size:10.5px;font-weight:700;text-align:right;padding:2px 14px 6px;color:#444}
+.legal{padding:4px 14px 22px;font-size:11px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.legal button{color:var(--mut);text-decoration:underline;font-size:11px}
+
+/* ---------- toast + sheet ---------- */
+.toast{position:absolute;left:14px;right:14px;bottom:18px;background:#0D1F2D;color:#fff;border-radius:13px;padding:12px 14px;font-size:13px;line-height:1.4;z-index:30;transform:translateY(calc(100% + 60px));opacity:0;transition:.3s;pointer-events:none}
+.toast.on{transform:none;opacity:1}
+.sheetbg{position:absolute;inset:0;background:rgba(13,31,45,.45);z-index:40;display:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:22px 22px 0 0;padding:16px 18px 24px;z-index:41;display:none;max-height:86%;overflow-y:auto}
+.sheet.on,.sheetbg.on{display:block}
+@media (max-width:619px){.toast,.sheet,.sheetbg{position:fixed}}
+.sheet h3{font-size:16px;color:var(--navy2);margin-bottom:4px}
+.sheet .hint{font-size:12px;color:var(--mut);margin-bottom:12px}
+.sheet .lbl{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mut);margin:12px 0 6px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sgrid button{border:1.5px solid var(--line);border-radius:10px;padding:8px;font-size:12px;text-align:left;line-height:1.3}
+.sgrid button b{display:block;font-size:11px;color:var(--teal)}
+</style>
+</head>
+<body>
+<div class="frame"><div class="app" id="app">
+  <div class="sbar"><span>12:22</span><div class="notch"></div>
+    <svg width="44" height="12" viewBox="0 0 44 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#111"/><rect x="4.5" y="6" width="3" height="6" rx="1" fill="#111"/><rect x="9" y="3.5" width="3" height="8.5" rx="1" fill="#111"/><rect x="13.5" y="1" width="3" height="11" rx="1" fill="#111"/><rect x="20.5" y="1" width="21" height="10" rx="3" fill="none" stroke="#111"/><rect x="22" y="2.5" width="18" height="7" rx="1.5" fill="#111"/></svg>
+  </div>
+  <main class="view" id="view"></main>
+  <div class="toast" id="toast"></div>
+  <div class="sheetbg" id="sheetbg" data-act="closeSheet"></div>
+  <div class="sheet" id="sheet"></div>
+</div></div>
+
+<script>
+/* =====================================================================
+   1. CONTENT
+   ===================================================================== */
+const PI_URL='https://content.boehringer-ingelheim.com/DAM/7d9c411c-ec33-4f82-886f-af1e011f35bb/jardiance-us-pi.pdf';
+const MG_URL='https://content.boehringer-ingelheim.com/DAM/6fd144e0-7eb2-4ab3-9fca-af1e011f41a6/jardiance-us-mg.pdf';
+const HF_BROCHURE='https://content.boehringer-ingelheim.com/DAM/103a231c-45f6-4513-9b49-b10f00f60771/pc-us-137349%20jardiance%20hf%20patient%20brochure%20digital%20version.pdf';
+// MLR: client screens say "$0 for a 30- to 90-day prescription"; live BI pricing page says "as little as $10 per month". Confirm before launch.
+const OFFER='as little as $0 for a 30- to 90-day prescription';
+
+const COND={
+ t2d:{name:'Type 2 Diabetes',lower:'type 2 diabetes',short:'T2D',icon:'drop',
+  hook:'Explore JARDIANCE for type 2 diabetes: A1C, blood sugar and your heart.',hookTo:'hub-t2d-jfor',
+  secs:{
+   about:{t:'About Type 2 Diabetes',ref:'1.1',icon:'book',arts:[
+    {h:'What is type 2 diabetes?',b:['Type 2 diabetes is the most common type of diabetes. It develops when the body can’t properly break down sugar in the bloodstream, either because it doesn’t make enough insulin or can’t use it properly.','If not treated, it can cause long-term health complications such as cardiovascular (CV) disease.','Whether you’re newly diagnosed or working on a treatment plan, it can be difficult to know where to start. Keep reading for helpful information.']},
+    {h:'Causes of type 2 diabetes',b:['The exact cause of type 2 diabetes is unknown, but there are some factors linked to its development:',{ul:['A history of high blood sugar, prediabetes and/or diabetes during pregnancy','Genetics and family history','Age','Overweight and obesity','Physical inactivity','Race and ethnicity','High blood pressure','Abnormal cholesterol']}]},
+    {h:'Type 2 diabetes symptoms',b:['Symptoms can develop slowly. Talk to your healthcare provider if you notice:',{ul:['Increased thirst and frequent urination','Increased hunger','Unintended weight loss','Fatigue','Blurred vision','Slow-healing sores and frequent infections','Areas of darkened skin, usually in the armpits and neck']}]},
+    {h:'Type 2 diabetes & your heart',b:['Over time, high blood sugar levels can cause plaque to build up in your blood vessels. This increases your risk of cardiovascular (CV) disease.','Type 2 diabetes can increase your risk of dying from a CV event, even if your A1C is under control. That’s why it’s important to think about your heart, too.',{go:['See how JARDIANCE can help','hub-t2d-jfor']}]}
+   ]},
+   second:{t:'Understanding A1C',ref:'1.2',icon:'chart',arts:[
+    {h:'What is A1C?',b:['A1C is a blood test that’s commonly used to diagnose diabetes. It’s also known as the hemoglobin A1C or HbA1c test, and it measures your average blood sugar levels over the past two to three months.','The resulting number gives you and your healthcare provider a glimpse into how well your blood sugar (glucose) is controlled.',{stats:[['<5.7%','Normal'],['5.7–6.5%','Prediabetes'],['6.5%+','Diabetes']]}]},
+    {h:'Why should you get an A1C test?',b:['An initial test helps your healthcare provider establish a baseline A1C level and develop a treatment plan.','Following that, regular testing helps your provider monitor how well your treatment is working over time.']},
+    {h:'When should you get an A1C test?',b:['If A1C goals are being met, twice-a-year testing is often recommended. If not, more frequent testing may be suggested.','Your healthcare provider will determine what’s best for you.',{go:['Set a reminder for my next test','reminder']}]},
+    {h:'Managing your A1C level',b:['Lowering A1C takes time and requires a type 2 diabetes treatment plan.','Work with your healthcare provider to create a program that includes a healthy diet, an exercise routine, and a type 2 diabetes medication like JARDIANCE to lower your blood sugar and A1C.']}
+   ]},
+   jfor:{t:'JARDIANCE for Type 2 Diabetes',ref:'1.3',icon:'clip',arts:[
+    {h:'Breakthrough CV benefit',b:['JARDIANCE significantly reduced the risk of cardiovascular (CV) death for adults who have type 2 diabetes and known heart disease.','JARDIANCE was tested in a 3-year clinical trial of over 7,000 adults with type 2 diabetes and CV disease. People in the study were already taking common type 2 diabetes and CV medicines (statins, beta blockers, ACE inhibitors, etc).',{note:'The current American Diabetes Association® Standards of Care recommend SGLT2 inhibitors, which include empagliflozin (the active ingredient in JARDIANCE), as a treatment option for adults with type 2 diabetes and known heart disease, with or without metformin.'}]},
+    {h:'Lower A1C and blood sugar',b:['JARDIANCE helped some people achieve an A1C of less than 7%.*',{stats:[['13%','Placebo'],['38%','JARDIANCE 10 mg'],['39%','JARDIANCE 25 mg']]},{foot:'*Percent of people whose A1C dropped below 7% in a 24-week study of adults with type 2 diabetes.'}]},
+    {h:'Lower blood sugar',b:['JARDIANCE works by helping to remove some sugar that the body doesn’t need through urination. That means lower blood sugar and can mean lower A1C levels.','In 24-week studies, JARDIANCE alone reduced fasting blood sugar (the measurement taken before breakfast) by an average of 19 or 25 points (mg/dL).†',{foot:'†Fasting blood sugar increased 12 points (mg/dL) in people taking placebo, while those taking JARDIANCE 10 mg and 25 mg saw drops of 19 and 25 points. At the beginning of the trials, patients had an average fasting blood sugar of 153 mg/dL.'}]},
+    {h:'Weight',b:['Even though JARDIANCE is not made for weight loss, it could also help some people lose some weight.',{stats:[['2.5%','Avg. weight loss, 10 mg'],['2.8%','Avg. weight loss, 25 mg']]},{foot:'In a study with JARDIANCE alone.'}]},
+    {h:'Blood pressure',b:['Although not made to lower blood pressure, when JARDIANCE was used alone or with metformin, it helped some people lower systolic blood pressure a little bit, too.','Systolic blood pressure is the top number of a blood pressure reading.']}
+   ]},
+   living:{t:'Living with Type 2 Diabetes',ref:'1.4',icon:'heart',arts:[
+    {h:'Build a healthy foundation',b:['JARDIANCE is here to support your journey as you learn to live well with type 2 diabetes and, along with diet and exercise, achieve your A1C goals.',{ul:['Plan ahead. Meal planning can help you save time, energy and maybe even money.','Baby steps. Small, steady changes are easier to keep up than big overhauls.']}]},
+    {h:'Work out smarter, not harder',b:[{ul:['Have 5, 10, or 15 free minutes? Take a walk, stretch, or knock out a chore or two.','Pair up. An exercise buddy can help you feel more accountable and stay motivated.','Make it fun. Choose a physical activity you enjoy so it doesn’t feel so much like work.']}]},
+    {h:'Take control of your diet',b:['Here are some tips for making a well-balanced diet more manageable:',{ul:['Pare down the portions. Stick to one serving at mealtime.','Make your carbs count. Limiting unhealthy carbs and avoiding foods with a high glycemic index can help maintain healthy blood sugar levels.']}]}
+   ]}
+  },
+  ddg:['What should my A1C goal be, and how often should I be tested?','How is type 2 diabetes affecting my heart?','Could JARDIANCE be right for me?','How does JARDIANCE work with the other medicines I take?','What side effects should I watch for, and when should I call you?','What changes to my diet and activity would help most?'],
+  cg:{intro:'Supporting someone with type 2 diabetes often happens around the kitchen table and on daily walks. Here are ways to help.',tips:[['Cook and eat together','Plan meals ahead and share smaller portions so healthy eating feels like a team effort.'],['Be an activity buddy','Short walks together count. 5, 10 or 15 minutes at a time adds up.'],['Know the number that matters','A1C shows average blood sugar over 2–3 months. Ask about their goal and testing schedule.'],['Prepare for appointments together','Bring a list of questions and write down what the doctor says.']]}
+ },
+ hf:{name:'Heart Failure',lower:'heart failure',short:'HF',icon:'heart',
+  hook:'Plan your care: meet your heart failure healthcare team.',hookTo:'hub-hf-second',
+  secs:{
+   about:{t:'About Heart Failure',ref:'2.1',icon:'book',arts:[
+    {h:'Whatever moments get your heart pumping',b:['Heart failure means the heart cannot pump enough blood to the rest of the body. Living with it isn’t easy, but the right treatment and support can help you keep doing what matters to you.','JARDIANCE is a proven, effective medication for heart failure, and it’s proven for both common types of congestive heart failure:',{ul:['HFrEF (also called systolic heart failure)','HFpEF (also called diastolic heart failure)']},{go:['See how JARDIANCE can help','hub-hf-jfor']}]}
+   ]},
+   second:{t:'Plan Your Care',ref:'2.3',icon:'user',arts:[
+    {h:'Meet your heart failure healthcare team',b:['Finding the right health professionals, and working closely with them, is an important part of your heart failure treatment.']},
+    {h:'Who may be on your care team',b:[{ul:['Primary care doctor: provides your routine preventive healthcare and is likely the first contact.','Cardiologist: diagnoses and treats heart problems. If you take JARDIANCE, your cardiologist is likely the doctor who prescribes it.','Clinical nurse specialists, nurse practitioners and physician assistants: perform tests, provide care and education.','Pharmacists: advise you on how your medicine interacts with other medicines and foods.','Dietitians: share heart-healthy eating guidelines and meal plans.','Mental health professionals: help with emotional stress, anxiety and depression.','Social workers and case managers: help with complex financial, legal and logistical issues, such as insurance.','Physical therapists: help with cardiac rehabilitation and a plan for regular activity.']}]},
+    {h:'Make your treatment plan',b:['Create a plan with your doctor, then check in with yourself as you go.',{ul:['Ask the doctor: bring your questions to every visit.','Questions for yourself: how are you feeling day to day?','Use the Doctor Discussion Guide to get ready.']},{go:['Open my Doctor Discussion Guide','ddg']}]},
+    {h:'Tips for caregivers',b:['Being a caregiver is a big commitment of time and energy, but with a clear plan and good support it can also be fulfilling.',{go:['Go to the Caregiver Support Center','cg']}]}
+   ]},
+   jfor:{t:'JARDIANCE for Heart Failure',ref:'2.2',icon:'clip',arts:[
+    {h:'Lower heart death risk',b:['JARDIANCE is proven to lower the risk of cardiovascular death and hospitalization for heart failure in adults with heart failure, when the heart cannot pump enough blood to the rest of the body.']},
+    {h:'Helps the heart fill & pump',b:['JARDIANCE may work by making it easier for the heart to fill with blood and pump it throughout the body.']},
+    {h:'Can get it for as little as $0',b:['If you qualify, you can get JARDIANCE for '+'as little as $0 with the JARDIANCE Savings Card.',{foot:'For eligible commercially insured patients. Terms apply.'},{go:['See savings options','savings']}]},
+    {h:'Easy to fit into your daily routine',b:['It’s one pill, taken in the morning, so it’s easy to fit into your daily routine.',{go:['Set a daily reminder','reminder']}]}
+   ]},
+   living:{t:'Living with Heart Failure',ref:'2.4',icon:'heart',arts:[
+    {h:'Stay positive when living with heart failure',b:['Living with heart failure isn’t easy, but some small habits can make a big difference. Here are tips to help you take one step at a time and celebrate the wins.']},
+    {h:'Eat heart healthy',b:['A dietitian can share heart-healthy eating guidelines and meal plans that fit your life.']},
+    {h:'Stay active',b:['Make physical activity part of your routine. Aim for 30 minutes a day, or what your doctor recommends.']},
+    {h:'Stick with your treatment plan',b:['Follow all instructions as your doctor recommends, and keep your regularly scheduled appointments and routine testing.']},
+    {h:'Know your numbers',b:['Want to keep track of your progress? Tracking your numbers can help your doctor identify trends at your next appointment.']},
+    {h:'Focus on sleep',b:['Good sleep supports your heart. Talk to your care team if you have trouble sleeping.']},
+    {h:'Reach out for support',b:['You can find inspiring support from the CareConnect4Me community to help you along the way.']}
+   ]}
+  },
+  ddg:['What type of heart failure do I have?','Who should be on my care team?','Is JARDIANCE right for my type of heart failure?','Which numbers should I track at home?','Which symptoms mean I should call you right away?','How much activity is right for me?'],
+  cg:{intro:'Being a caregiver is a big commitment of time and energy, but with a clear plan and good support it can also be fulfilling. Below are some tips for caregivers.',tips:[['Help them stick with the plan','One pill in the morning is easier with a shared routine. Set a daily reminder together.'],['Get to know the care team','Cardiologist, pharmacist, dietitian: knowing who does what makes appointments smoother.'],['Track the numbers together','Keep a simple log so the doctor can spot trends at the next visit.'],['Check in with yourself','Caregivers need support too. Reach out to friends, family or a support community.']]}
+ },
+ ckd:{name:'Chronic Kidney Disease',lower:'chronic kidney disease',short:'CKD',icon:'kidney',
+  hook:'Know your numbers: what eGFR and UACR tests tell you.',hookTo:'hub-ckd-about',
+  secs:{
+   about:{t:'About Chronic Kidney Disease',ref:'3.1',icon:'book',arts:[
+    {h:'Understanding chronic kidney disease',b:['CKD is a progressive disease that is divided into 5 stages. The stages are based on how well the kidneys are working to filter waste from the blood.']},
+    {h:'CKD testing',b:['You may be familiar with 2 tests used to check kidney health: the eGFR blood test and the UACR urine test.']},
+    {h:'Knowing your numbers',b:['Your test results help your doctor understand how your kidneys are working and identify trends over time. Ask for your latest numbers at each visit.']},
+    {h:'eGFR blood test',b:['eGFR measures how well the kidneys are filtering. An eGFR below 60 mL/min/1.73 m² can be an early sign of kidney disease.']},
+    {h:'UACR urine test',b:['UACR (urine albumin-to-creatinine ratio) checks for albumin, a type of protein, in your urine. Albumin in the urine can be a sign of kidney damage.']}
+   ]},
+   second:{t:'Managing CKD',ref:'3.2',icon:'kidney',arts:[
+    {h:'Ways to manage',b:['While you can’t always prevent CKD, being aware of the risk factors and how to stay on top of your health is important in managing it.']},
+    {h:'Risk factors',b:['Diabetes, followed by high blood pressure, are the two most common risk factors for chronic kidney disease.']},
+    {h:'Control blood pressure',b:['Work with your doctor to meet your blood pressure goals and keep it under control.']},
+    {h:'Manage blood sugar',b:['If you have diabetes, it’s important to stay in your target blood sugar range.']},
+    {h:'Eat a kidney-friendly diet',b:['Work with a dietitian to create a kidney-friendly meal plan to help keep your kidneys healthy.']},
+    {h:'Stay active',b:['Make physical activity part of your routine. Aim for 30 minutes a day.']},
+    {h:'Aim for a healthy weight',b:['Staying at a healthy weight is important for your overall health, including your kidney health.']},
+    {h:'Manage other conditions',b:['Keep other conditions under control with regularly scheduled doctor’s appointments and routine testing.']}
+   ]},
+   jfor:{t:'JARDIANCE for CKD',ref:'3.3',icon:'clip',arts:[
+    {h:'For adults with CKD, JARDIANCE is proven to:',b:[{ul:['Slow the progression of chronic kidney disease','Reduce the risk of kidney failure','Lower the risk of cardiovascular death','Reduce the risk of hospitalization']},'If you’re already taking a medication for type 2 diabetes or heart failure, you can also add JARDIANCE.']},
+    {h:'How does JARDIANCE work?',b:['JARDIANCE helps the kidneys do their job of filtering excess salt and sugar from the blood.']}
+   ]},
+   living:{t:'Living with CKD',ref:'3.4',icon:'heart',arts:[
+    {h:'Eating a kidney-friendly diet',b:['A dietitian can help you build a meal plan that supports your kidneys and fits the foods you enjoy.']},
+    {h:'Getting regular exercise',b:['Aim for about 30 minutes of activity a day, or what your doctor recommends.']},
+    {h:'Finding healthy ways to cope with stress',b:['Living with a long-term condition can be stressful. Make time for activities that help you relax, and reach out for support when you need it.']}
+   ]}
+  },
+  ddg:['What stage is my CKD?','What are my latest eGFR and UACR results?','How often should my kidneys be tested?','Could JARDIANCE help slow my CKD?','Should I see a dietitian?','How do my other conditions affect my kidneys?'],
+  cg:{intro:'Kidney health is a long game. Small, shared habits make it easier for the person you care for.',tips:[['Cook kidney-friendly meals together','Ask their dietitian for a meal plan you can both follow.'],['Know the numbers','eGFR and UACR show how the kidneys are doing. Keep a copy of the results.'],['Cope with stress together','Make time for activities that help you both relax.'],['Prepare for appointments together','Bring questions and write down the answers.']]}
+ }
+};
+const TAKING={t:'Taking JARDIANCE',ref:'4.0',icon:'pill',arts:[
+ {h:'Starting JARDIANCE',b:['JARDIANCE is one pill taken once a day, in the morning, with or without food. Follow all instructions as your doctor recommends.',{go:['Set a daily reminder','reminder']}]},
+ {h:'Is JARDIANCE a pill?',b:['Yes. JARDIANCE is one pill taken once a day, so it’s easy to fit into your daily routine.']},
+ {h:'Does JARDIANCE need to be taken with food?',b:['No. JARDIANCE can be taken with or without food.']},
+ {h:'Can JARDIANCE be taken with metformin or other medications?',b:['JARDIANCE can be taken with other medications and can be used with or without metformin. Tell your healthcare provider about all the medicines you take, including prescription and non-prescription medicines, vitamins and supplements.']},
+ {h:'How long does it take for JARDIANCE to work?',b:['Everyone’s results are different, so it’s important to take JARDIANCE daily as prescribed. At your next appointment, your doctor can update you and help identify trends.']},
+ {h:'Possible side effects',b:['The most common side effects of JARDIANCE include urinary tract infections and yeast infections in females.',{ul:['Urinary tract infections','Yeast infections','Increased urination. Try to stay hydrated.']},'Good hygiene and drinking plenty of water are your best defense. When you start JARDIANCE, you may experience increased urination.',{note:'For serious side effects, see the Important Safety Information below. Call your healthcare provider right away if you have symptoms.'}]}
+]};
+const FAQS=[
+ ['What is JARDIANCE?','JARDIANCE is a once-daily prescription pill used in adults with heart failure, adults with chronic kidney disease at risk of progression, and adults with type 2 diabetes. See “What is JARDIANCE?” below for full uses.'],
+ ['Is JARDIANCE a pill?','Yes, it’s one pill taken once a day in the morning.'],
+ ['When do I take JARDIANCE?','Take it once a day in the morning, exactly as your healthcare provider tells you.'],
+ ['Does JARDIANCE need to be taken with food?','No. It can be taken with or without food.'],
+ ['Can I take JARDIANCE with metformin?','JARDIANCE can be used with or without metformin. Tell your provider about all the medicines you take.'],
+ ['How can I save on JARDIANCE?','Eligible commercially insured patients may pay '+OFFER+' with the JARDIANCE Savings Card. If you have Medicare, Medicaid or no insurance, other support may be available.']
+];
+
+/* =====================================================================
+   2. ICONS + LOGO
+   ===================================================================== */
+const IC={
+ card:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 14h4"/>',
+ heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M12 10v4M10 12h4"/>',
+ drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M10 15a2 2 0 0 0 2 2"/>',
+ kidney:'<path d="M9 4c-3 0-5 3-5 7s2 9 5 9 3-3 3-5-2-2-2-4 2-2 2-4-1-3-3-3z"/><path d="M15 4c3 0 5 3 5 7s-2 9-5 9"/>',
+ pill:'<rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-35 12 12.5)"/><path d="M9.5 8.5l5 7"/>',
+ phone:'<path d="M5 4h3l2 5-2 1a11 11 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/><path d="M17 3v5M14.5 5.5h5"/>',
+ doc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+ q:'<circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/><path d="M9.5 9.5a1.6 1.6 0 1 1 2.2 1.5c-.5.2-.7.6-.7 1.1M11 14.5v.1"/>',
+ care:'<circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.5 2.7-6 6-6"/><path d="M17 20s-4-2.4-4-5.2a2 2 0 0 1 4-1 2 2 0 0 1 4 1C21 17.6 17 20 17 20z"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+ book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
+ chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+ clip:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M12 9v6M9 12h6"/>',
+ compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+ shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+ bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+ chev:'<path d="M9 6l6 6-6 6"/>', backa:'<path d="M20 12H5M11 6l-6 6 6 6"/>',
+ check:'<path d="M5 12l4 4 10-10"/>', lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>', share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+ home:'<path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z" fill="#fff" stroke="none"/>'
+};
+const ic=(n,s=20,c='#0a8a82',w=1.8)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const LOGO=`<svg width="190" height="60" viewBox="0 0 190 60" role="img" aria-label="Jardiance (empagliflozin) tablets"><text x="12" y="36" font-family="Inter" font-size="27" fill="#0a8a82" font-weight="500">Jardiance</text><text x="132" y="23" font-size="7" fill="#0a8a82">®</text><path d="M146 9l24-7-10 22z" fill="#ffc629"/><path d="M160 24l10-22 6 10z" fill="#0a8a82"/><path d="M154 12l6 12-14-7z" fill="#7cc6b9"/><text x="31" y="52" font-family="Inter" font-size="12" fill="#333">(empagliflozin) tablets</text></svg>`;
+
+/* =====================================================================
+   3. STATE, PERSISTENCE, ANALYTICS
+   ===================================================================== */
+const store={get(k,d){try{const v=localStorage.getItem('jrd_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('jrd_'+k,JSON.stringify(v))}catch(e){}},clear(){try{Object.keys(localStorage).filter(k=>k.startsWith('jrd_')).forEach(k=>localStorage.removeItem(k))}catch(e){}}};
+let P=store.get('profile',null);          // committed profile: {role,conds,sav,ins,enrolled,card}
+let D={role:null,conds:[],sav:null,ins:null,unsure:false,pendingCond:null}; // draft answers during qualifier
+let ENTRY=store.get('entry',{ch:'email',crm:'unknown'});
+let UI={enr:1,att:{},cardChecked:false,found:null,back:'home'};
+window.dataLayer=window.dataLayer||[];
+function track(ev,data={}){const e={event:ev,segment:P?segId(P):null,channel:ENTRY.ch,ts:new Date().toISOString(),...data};window.dataLayer.push(e)}
+
+function segId(p){
+  if(!p||!p.role||p.role==='explore'||!p.conds.length) return 'S1';
+  const c=p.conds[0];
+  if(p.role==='cg') return {t2d:'S5',hf:'S6',ckd:'S7'}[c];
+  return {t2d:'S2',hf:'S3',ckd:'S4'}[c]+(p.sav==='had'?'a':'b');
+}
+const isGov=p=>p&&(p.ins==='mcare'||p.ins==='mcaid');
+const isUnins=p=>p&&p.ins==='none';
+function commit(){
+  P={role:D.role==='explore'?'explore':D.role,conds:[...D.conds],sav:D.sav,ins:D.ins,enrolled:P&&P.enrolled||false,card:P&&P.card||null,ts:Date.now()};
+  store.set('profile',P); track('qualifier_complete',{answers:{role:P.role,conds:P.conds,sav:P.sav,ins:P.ins}});
+}
+
+/* =====================================================================
+   4. ROUTER (plain #name hashes only)
+   ===================================================================== */
+const TOKENS=['email','sms','email-had','sms-had','email-none','sms-none'];
+let building=false, depth=0;
+function nav(r){depth++; if(location.hash==='#'+r) render(); else location.hash=r}
+function goBack(){ if(depth>0){depth--;history.back()} else nav('home') }
+function route(){return (location.hash||'').slice(1)}
+window.addEventListener('hashchange',()=>{render();toTop()});
+
+/* =====================================================================
+   5. SHARED UI
+   ===================================================================== */
+function chrome(inner,{head=null,isi=true}={}){
+  const top=head?`<div class="dh"><button aria-label="Back" data-act="back">${ic('backa',22,'#fff',2.2)}</button><span class="t">${head}</span><button aria-label="Home" data-go="home"><svg width="22" height="22" viewBox="0 0 24 24">${IC.home}</svg></button></div>`
+   :`<nav class="tabs"><a href="${PI_URL}" target="_blank" rel="noopener">Prescribing Information</a><a href="${MG_URL}" target="_blank" rel="noopener">Medication Guide</a></nav><div class="logo">${LOGO}</div>`;
+  return top+inner+(isi?isiBlock():'');
+}
+function isiBlock(){
+  // MLR: placeholder ISI assembled from public BI materials (CL-JAR / PC-US brochures). Replace with current approved ISI + indication copy.
+  return `<section class="isi" id="isi">
+  <button class="isih" data-act="toggleInd">What is JARDIANCE? ${ic('plus',18)}</button>
+  <div class="ind" id="ind">JARDIANCE is a prescription medicine used to:<ul><li>reduce the risk of cardiovascular death and hospitalization for heart failure in adults with heart failure</li><li>reduce the risk of further worsening of kidney disease, end-stage kidney disease, cardiovascular death, and hospitalization in adults with chronic kidney disease at risk of progression</li><li>reduce the risk of cardiovascular death in adults with type 2 diabetes and known cardiovascular disease</li><li>lower blood sugar along with diet and exercise in adults and children aged 10 years and older with type 2 diabetes</li></ul>JARDIANCE is not for people with type 1 diabetes. It is not for use to lower blood sugar in people with type 2 diabetes who have severe kidney problems, because it may not work.</div>
+  <button class="isih" data-act="toggleIsi">IMPORTANT SAFETY INFORMATION ${ic('plus',18)}</button>
+  <div class="isib"><p><b>Do not take</b> JARDIANCE if you are allergic to empagliflozin or any of the ingredients in JARDIANCE. Symptoms of a serious allergic reaction may include:</p>
+  <div class="more"><ul><li>skin rash, raised red patches on your skin (hives), swelling of the face, lips, tongue and throat that may cause difficulty breathing or swallowing</li></ul>
+  <p><b>JARDIANCE can cause serious side effects, including:</b></p>
+  <ul><li><b>Ketoacidosis</b> (increased ketones in your blood or urine), which can be life-threatening and needs to be treated in a hospital. It can happen even if your blood sugar is less than 250 mg/dL.</li>
+  <li><b>Dehydration.</b> JARDIANCE can cause some people to become dehydrated, which may cause you to feel dizzy, faint, light-headed or weak, especially when you stand up. Sudden worsening of kidney function has happened.</li>
+  <li><b>Serious urinary tract infections</b> that may lead to hospitalization.</li>
+  <li><b>Low blood sugar (hypoglycemia)</b> if you take JARDIANCE with another medicine that can cause low blood sugar, such as a sulfonylurea or insulin.</li>
+  <li><b>A rare but serious bacterial infection</b> that causes damage to the tissue under the skin (necrotizing fasciitis) in the area between and around the anus and genitals (perineum).</li>
+  <li><b>Vaginal and penile yeast infections.</b></li></ul>
+  <p>The most common side effects of JARDIANCE include urinary tract infections and yeast infections in females.</p>
+  <p>Before you take JARDIANCE, tell your healthcare provider about all of your medical conditions and all the medicines you take. Do not breastfeed while taking JARDIANCE.</p>
+  <p>You are encouraged to report negative side effects of prescription drugs to the FDA. Visit <a href="https://www.fda.gov/medwatch" target="_blank" rel="noopener">www.fda.gov/medwatch</a> or call 1-800-FDA-1088.</p>
+  <p>Please see <a href="${PI_URL}" target="_blank" rel="noopener">Prescribing Information</a> and <a href="${MG_URL}" target="_blank" rel="noopener">Medication Guide</a>.</p></div></div>
+  <div class="pc">PC-US-151783</div>
+  <div class="legal"><span>© Boehringer Ingelheim · Privacy · Terms</span><button data-act="demo">Demo tools</button></div></section>`;
+}
+function prog(n,t){let h='<div class="prog">';for(let i=1;i<=t;i++)h+=`<i class="${i<=n?'on':''}"></i>`;return h+'</div>'}
+function totalQ(){ if(D.role==='cg') return 2; if(D.role==='pt'){ if(ENTRY.crm==='had') return 2; if(ENTRY.crm==='none') return 3; return D.sav==='had'?3:4 } return 3 }
+const ans=(icon,label,sub,on,act,check)=>`<button class="a ${on?'on':''}" data-act="${act}"><span class="ai">${ic(icon,19)}</span><span>${label}${sub?`<small>${sub}</small>`:''}</span>${check?`<span class="ck">${on?ic('check',13,'#fff',3):''}</span>`:''}</button>`;
+const backBtn=()=>`<button class="back" data-act="back">${ic('backa',14,'#5d6b78')} Back</button>`;
+function toast(t){const el=document.getElementById('toast');el.innerHTML=t;el.classList.add('on');clearTimeout(el._h);el._h=setTimeout(()=>el.classList.remove('on'),3200)}
+function copy(text,label){try{navigator.clipboard.writeText(text).then(()=>toast(label+' copied'),()=>toast('Copy not available here. Long-press to select the text.'))}catch(e){toast('Copy not available here.')}}
+
+/* =====================================================================
+   6. VIEWS — qualifier
+   ===================================================================== */
+function vStart(){
+  const taps=ENTRY.crm==='unknown'?'3':'2';
+  return chrome(`<div class="q"><div class="hero"><h1>Let's make JARDIANCE Support yours</h1><p>A few quick questions so we show you the tips, tools and savings information that matter to you.</p>
+   <div class="steps3"><div><b>${taps}</b>quick taps</div><div><b>&lt;1</b>minute</div><div><b>0</b>personal info typed</div></div></div>
+   <button class="cta" data-act="begin">Get started</button>
+   <button class="lnk" data-act="skip">Skip — show me everything</button>
+   <div class="priv">${ic('lock',15,'#5d6b78')}<span>Your answers only tailor what you see here. You can change them anytime.</span></div></div>`);
+}
+function vQ1(){
+  const pc=D.pendingCond?COND[D.pendingCond].lower:null;
+  return chrome(`<div class="q">${prog(1,totalQ())}${backBtn()}
+   <div class="qk">Question 1</div><h1 class="qh">Who are you looking for support for?</h1>
+   <p class="qs">${pc?`We'll tailor the ${pc} content for you.`:'This helps us speak to you the right way.'}</p>
+   <div class="ans">${ans('user','Myself','I take, or was prescribed, JARDIANCE',D.role==='pt','role:pt')}
+   ${ans('care','Someone I care for','A family member, partner or friend',D.role==='cg','role:cg')}
+   ${pc?'':ans('compass','Just exploring','Show me general information',D.role==='explore','role:explore')}</div></div>`);
+}
+function vQ2(){
+  const cg=D.role==='cg';
+  return chrome(`<div class="q">${prog(2,totalQ())}${backBtn()}
+   <div class="qk">Question 2</div><h1 class="qh">${cg?'What is your loved one being treated for?':'What is JARDIANCE prescribed for?'}</h1>
+   <p class="qs">Select all that apply. Many people manage more than one.</p>
+   <div class="ans">${['t2d','hf','ckd'].map(k=>ans(COND[k].icon,COND[k].name,'',D.conds.includes(k),'cond:'+k,true)).join('')}
+   ${ans('q',"I'm not sure",'',D.unsure,'cond:unsure',true)}</div>
+   <button class="cta" style="margin-top:14px" ${D.conds.length||D.unsure?'':'disabled'} data-act="condNext">Continue</button></div>`);
+}
+function vQ3(){
+  return chrome(`<div class="q">${prog(3,totalQ())}${backBtn()}
+   <div class="qk">Question 3</div><h1 class="qh">Have you used a JARDIANCE Savings Card before?</h1>
+   <p class="qs">We'll help you get one, or make sure yours is still working.</p>
+   <div class="ans">${ans('card','Yes, I have one','',D.sav==='had','sav:had')}${ans('card','No, never','',D.sav==='none','sav:none')}${ans('q',"I'm not sure",'',D.sav==='unsure','sav:unsure')}</div></div>`);
+}
+function vQ4(){
+  const n=UI.insOnly?1:totalQ();
+  return chrome(`<div class="q">${prog(n,n)}${backBtn()}
+   <div class="qk">${UI.insOnly?'Update coverage':'Last one'}</div><h1 class="qh">How do you pay for your prescriptions?</h1>
+   <p class="qs">Savings options depend on your coverage. We'll only show offers you can use.</p>
+   <div class="ans">${ans('shield','Insurance through work or a private plan','Commercial',D.ins==='comm','ins:comm')}
+   ${ans('shield','Medicare','Including Part D',D.ins==='mcare','ins:mcare')}
+   ${ans('shield','Medicaid or another state plan','',D.ins==='mcaid','ins:mcaid')}
+   ${ans('card','No insurance','',D.ins==='none','ins:none')}</div></div>`);
+}
+function vBuilding(){return `<div class="logo">${LOGO}</div><div class="build"><div class="spin"></div><h2>Personalizing your experience…</h2><p>Matching tips, tools and savings to your answers</p></div>`}
+
+/* =====================================================================
+   7. VIEWS — home
+   ===================================================================== */
+function homeCfg(){
+  const s=segId(P), c=P.conds[0], C=c?COND[c]:null;
+  let m1,m2,tiles,chip;
+  const offerTxt='Eligible patients can pay '+OFFER+'.';
+  if(s==='S1'){
+    m1={i:'phone',t:'Welcome to JARDIANCE Support. Explore tips, tools and resources.',to:'support'};
+    m2={i:'card',t:offerTxt,to:'savings'};
+    tiles=[['cond-t2d','Type 2 Diabetes','drop'],['cond-hf','Heart Failure','heart'],['cond-ckd','Chronic Kidney Disease','kidney'],['taking','Taking JARDIANCE','pill'],['savings','Pricing & Savings','card'],['support','Support & Resources','phone']];
+    chip=null;
+  } else if(P.role==='cg'){
+    m1={i:'pin',t:`Caring for someone with ${C.lower}? Find tips to help them, and support for you.`,to:'cg'};
+    m2={i:'card',t:'Help your loved one save: eligible patients can pay '+OFFER+'.',to:'savings'};
+    tiles=[['cg','Caregiver Support Center','care'],[`hub-${c}-about`,'Understanding the Condition','book'],['treat','Treatment & Medication Resources','clip'],['ddg','Doctor Discussion Guide','doc'],['faqs','FAQs','q'],['savings','Pricing & Savings','card']];
+    chip={who:'Someone I care for',what:C.name};
+  } else {
+    const hook={i:C.icon,t:C.hook,to:C.hookTo};
+    if(isGov(P)||isUnins(P)){ m1=hook; m2={i:'shield',t:'Explore support options that fit your coverage.',to:'savings'}; }
+    else if(P.enrolled){ m1={i:'card',t:'Your JARDIANCE Savings Card is ready. Show it at your next refill.',to:'savings',cta:'View'}; m2=hook; }
+    else if(P.sav==='had'){ m1={i:'card',t:'Welcome back. Make sure your JARDIANCE Savings Card is still active before your next refill.',to:'savings',cta:'Check'}; m2=hook; }
+    else if(isGov(P)||isUnins(P)){ m1=hook; m2={i:'shield',t:'Explore support options that fit your coverage.',to:'savings'}; }
+    else { m1={i:'card',t:(P.sav==='unsure'?'Not sure if you have a card? Check in a minute. ':'')+offerTxt,to:'savings',cta:P.sav==='unsure'?'Check':'View'}; m2=hook; }
+    const secIcon={t2d:'chart',hf:'user',ckd:'kidney'}[c];
+    tiles=[[`hub-${c}-jfor`,C.secs.jfor.t.replace('Chronic Kidney Disease','CKD'),'clip'],[`hub-${c}-second`,C.secs.second.t,secIcon],[`hub-${c}-living`,C.secs.living.t,'heart'],['taking','Taking JARDIANCE','pill'],['ddg','Doctor Discussion Guide','doc'],['savings','Pricing & Savings','card']];
+    chip={who:'Me',what:P.conds.map(k=>COND[k].name).join(' + ')};
+  }
+  return {m1,m2,tiles,chip};
+}
+function vHome(){
+  const {m1,m2,tiles,chip}=homeCfg();
+  const extra=P.role==='pt'&&P.conds.length>1?P.conds.slice(1):[];
+  const cardBadge=P.role==='pt'&&(P.sav==='had'||P.enrolled)&&!isGov(P)&&!isUnins(P);
+  return chrome(`${chip?`<div class="forchip">${ic(P.role==='cg'?'care':'user',16)}<span>For: <b>${chip.who}</b> · ${chip.what}</span><button data-act="change">Change</button></div>`
+     :`<div class="forchip">${ic('compass',16)}<span>Want this tailored to you?</span><button data-act="change">Personalize</button></div>`}
+   <h2 class="sec">Personal Message</h2>
+   <button class="msg dark" data-go="${m1.to}" data-msg="1"><span class="mi">${ic(m1.i,20)}</span><span class="mt">${m1.t}</span><span class="pill">${m1.cta||'View'} ›</span></button>
+   <button class="msg light" data-go="${m2.to}" data-msg="2"><span class="mi">${ic(m2.i,20)}</span><span class="mt">${m2.t}</span><span class="pill">View ›</span></button>
+   <h2 class="sec">Custom Content</h2>
+   <div class="grid">${tiles.map(t=>`<button class="tile" data-go="${t[0]}"><span class="ic">${ic(t[2],21)}</span><span class="tl">${t[1]}</span>${t[0]==='savings'&&cardBadge?'<span class="bdg">CARD ON FILE</span>':''}</button>`).join('')}</div>
+   ${extra.map(k=>`<button class="also" data-go="cond-${k}">${ic(COND[k].icon,18)} Also managing ${COND[k].lower}? See ${COND[k].short} resources ›</button>`).join('')}`);
+}
+
+/* =====================================================================
+   8. VIEWS — content
+   ===================================================================== */
+function rowsHtml(list){return `<div class="rows">${list.map(r=>`<button class="row" data-go="${r.to}"><span class="ri">${ic(r.icon||'book',17)}</span><span class="rt">${r.t}${r.s?`<small>${r.s}</small>`:''}</span>${ic('chev',16,'#9aa7b2')}</button>`).join('')}</div>`}
+function vCond(c){
+  const C=COND[c]; const generic=segId(P)==='S1';
+  return chrome(`<div class="pad">${generic?`<div class="note b">Looking for ${C.lower} support? <button style="font-weight:700;text-decoration:underline;color:var(--teal)" data-act="tailor:${c}">Tailor my experience</button> in one tap.</div>`:''}
+   ${rowsHtml(Object.entries(C.secs).map(([k,s])=>({t:s.t,s:s.arts.length+' topics',icon:s.icon,to:`hub-${c}-${k}`})))}</div>`,{head:C.name});
+}
+function vHub(c,k){
+  const s=k==='taking'?TAKING:COND[c].secs[k];
+  const base=k==='taking'?'art-taking':`art-${c}-${k}`;
+  const cgNote=P&&P.role==='cg'&&k==='about'?`<div class="note b">Written for patients. Read it with your loved one in mind.</div>`:'';
+  return chrome(`<div class="pad" data-ref="${s.ref}">${cgNote}${rowsHtml(s.arts.map((a,i)=>({t:a.h,icon:s.icon,to:`${base}-${i}`})))}</div>`,{head:s.t});
+}
+function blocks(b){
+  return b.map(x=>{
+    if(typeof x==='string') return `<p>${x}</p>`;
+    if(x.ul) return `<ul>${x.ul.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+    if(x.stats) return `<div class="stats">${x.stats.map(s=>`<div class="stat"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('')}</div>`;
+    if(x.note) return `<div class="note b">${x.note}</div>`;
+    if(x.foot) return `<p class="foot">${x.foot}</p>`;
+    if(x.go) return `<button class="cta o" style="margin-bottom:14px" data-go="${x.go[1]}">${x.go[0]}</button>`;
+    return '';
+  }).join('');
+}
+function vArt(c,k,i){
+  const s=k==='taking'?TAKING:COND[c].secs[k]; const a=s.arts[i]; if(!a) return vHome();
+  const base=k==='taking'?'art-taking':`art-${c}-${k}`;
+  const nx=s.arts[i+1];
+  return chrome(`<article class="pad art" data-ref="${s.ref}"><h2>${a.h}</h2>${blocks(a.b)}
+   ${nx?`<button class="next" data-go="${base}-${i+1}"><span style="flex:1;text-align:left"><small>Next</small><b>${nx.h}</b></span>${ic('chev',18)}</button>`
+       :`<button class="next" data-go="${k==='taking'?'taking':`hub-${c}-${k}`}"><span style="flex:1;text-align:left"><small>You've finished</small><b>Back to ${s.t}</b></span>${ic('chev',18)}</button>`}</article>`,{head:s.t.replace('Chronic Kidney Disease','CKD')});
+}
+function vTreat(){
+  const c=P.conds[0], C=COND[c];
+  return chrome(`<div class="pad"><div class="sub">${C.secs.jfor.t}</div>${rowsHtml(C.secs.jfor.arts.map((a,i)=>({t:a.h,icon:'clip',to:`art-${c}-jfor-${i}`})))}
+   <div class="sub">Taking JARDIANCE</div>${rowsHtml(TAKING.arts.map((a,i)=>({t:a.h,icon:'pill',to:`art-taking-${i}`})))}</div>`,{head:'Treatment & Medication'});
+}
+function vFaqs(){
+  return chrome(`<div class="pad">${FAQS.map(f=>`<div class="acc"><button data-act="acc">${f[0]} ${ic('plus',18)}</button><div>${f[1]}</div></div>`).join('')}
+   <button class="next" style="margin-top:14px" data-go="taking"><span style="flex:1;text-align:left"><small>More answers</small><b>Taking JARDIANCE</b></span>${ic('chev',18)}</button></div>`,{head:'FAQs'});
+}
+function vSupport(){
+  return chrome(`<div class="pad">
+   <div class="sub">Learn</div>${rowsHtml([{t:'Type 2 Diabetes',icon:'drop',to:'cond-t2d'},{t:'Heart Failure',icon:'heart',to:'cond-hf'},{t:'Chronic Kidney Disease',icon:'kidney',to:'cond-ckd'}])}
+   <div class="sub">Tools</div>${rowsHtml([{t:'Doctor Discussion Guide',s:'Build your question list',icon:'doc',to:'ddg'},{t:'Reminders',s:'Daily dose and refill reminders',icon:'bell',to:'reminder'},{t:'FAQs',icon:'q',to:'faqs'},{t:'Caregiver Support Center',icon:'care',to:'cg'}])}
+   <div class="sub">Downloads</div><div class="rows"><a class="row" style="text-decoration:none;color:inherit" href="${HF_BROCHURE}" target="_blank" rel="noopener"><span class="ri">${ic('doc',17)}</span><span class="rt">Heart Failure patient brochure<small>PDF · opens in a new tab</small></span>${ic('chev',16,'#9aa7b2')}</a>
+   <a class="row" style="text-decoration:none;color:inherit" href="${MG_URL}" target="_blank" rel="noopener"><span class="ri">${ic('doc',17)}</span><span class="rt">Medication Guide<small>PDF · opens in a new tab</small></span>${ic('chev',16,'#9aa7b2')}</a></div>
+   <div class="sub">Get help</div>
+   <div class="contact"><b>Boehringer Ingelheim Cares Foundation</b><br>Patient assistance for eligible patients<br>1-800-556-8317 · 8:30 a.m.–6:00 p.m. ET<br><a href="https://www.bipatientassistance.com" target="_blank" rel="noopener">bipatientassistance.com</a></div>
+   <div class="contact"><b>Report a side effect</b><br>Call 1-800-FDA-1088 or visit <a href="https://www.fda.gov/medwatch" target="_blank" rel="noopener">fda.gov/medwatch</a></div></div>`,{head:'Support & Resources'});
+}
+function vCg(){
+  const c=P&&P.conds[0]||'hf', C=COND[c];
+  return chrome(`<div class="pad"><div class="art"><h2>Supporting someone with ${C.lower}</h2><p>${C.cg.intro}</p></div>
+   <div class="rows">${C.cg.tips.map(t=>`<div class="row" style="align-items:flex-start;cursor:default"><span class="ri">${ic('care',17)}</span><span class="rt">${t[0]}<small>${t[1]}</small></span></div>`).join('')}</div>
+   <div class="sub">Do it together</div>${rowsHtml([{t:'Prepare for the next appointment',s:'Doctor Discussion Guide',icon:'doc',to:'ddg'},{t:'Set a shared daily reminder',icon:'bell',to:'reminder'},{t:`Understanding ${C.lower}`,icon:'book',to:`hub-${c}-about`},{t:'Help them save on JARDIANCE',icon:'card',to:'savings'}])}</div>`,{head:'Caregiver Support Center'});
+}
+function vDdg(){
+  const saved=store.get('ddg',{c:null,q:[],notes:''});
+  const c=UI.ddgC||saved.c||(P&&P.conds[0])||'t2d'; UI.ddgC=c; const C=COND[c]; const cg=P&&P.role==='cg';
+  const sel=saved.c===c?saved.q:[];
+  return chrome(`<div class="pad"><div class="art"><h2>${cg?'Prepare for the next visit together':'Get ready for your next visit'}</h2><p>Pick the questions you want to ask. We'll keep your list on this device.</p></div>
+   <div class="seg">${['t2d','hf','ckd'].map(k=>`<button class="${k===c?'on':''}" data-act="ddgc:${k}">${COND[k].short}</button>`).join('')}</div>
+   ${C.ddg.map((q,i)=>{const t=cg?q.replace(/\bmy\b/g,'their').replace(/\bI\b/g,'they').replace(/\bme\b/g,'them'):q;return `<button class="chk ${sel.includes(i)?'on':''}" data-act="ddgq:${i}"><span class="bx">${sel.includes(i)?ic('check',13,'#fff',3):''}</span><span>${t}</span></button>`}).join('')}
+   <label class="fld" style="margin-top:14px"><span>My notes</span><textarea id="ddgNotes" rows="3" placeholder="Symptoms, numbers, anything else to mention">${saved.c===c?saved.notes:''}</textarea></label>
+   <div class="btns"><button class="cta" data-act="ddgSave">Save my guide</button><button class="cta o" data-act="ddgCopy">Copy my questions</button></div></div>`,{head:'Doctor Discussion Guide'});
+}
+function vReminder(){
+  const r=store.get('reminder',null);
+  UI.rem=UI.rem||{type:'dose',time:'08:00',ch:'sms'}; const R=UI.rem;
+  return chrome(`<div class="pad">${r?`<div class="note b">${ic('bell',15)} You have a ${r.type==='dose'?'daily dose':'refill'} reminder at ${r.time} by ${r.ch==='sms'?'text':'email'}.</div>`:''}
+   <div class="art"><h2>Stay on track</h2><p>JARDIANCE is one pill in the morning. A reminder makes it part of the routine.</p></div>
+   <div class="sub">Reminder type</div><div class="seg"><button class="${R.type==='dose'?'on':''}" data-act="rem:type:dose">Daily dose</button><button class="${R.type==='refill'?'on':''}" data-act="rem:type:refill">Refill</button><button class="${R.type==='a1c'?'on':''}" data-act="rem:type:a1c">Next test</button></div>
+   <div class="sub">Time</div><div class="seg">${['07:00','08:00','09:00','10:00'].map(t=>`<button class="${R.time===t?'on':''}" data-act="rem:time:${t}">${t.replace(/^0/,'')} am</button>`).join('')}</div>
+   <div class="sub">Send by</div><div class="seg"><button class="${R.ch==='sms'?'on':''}" data-act="rem:ch:sms">Text</button><button class="${R.ch==='email'?'on':''}" data-act="rem:ch:email">Email</button></div>
+   <button class="cta" style="margin-top:6px" data-act="remSave">Save reminder</button>
+   <p class="foot" style="margin-top:10px">Reminders go to the ${ENTRY.ch==='sms'?'mobile number':'email address'} we contacted you on. Reply STOP anytime.</p></div>`,{head:'Reminders'});
+}
+
+/* =====================================================================
+   9. VIEWS — savings (branches by profile)
+   ===================================================================== */
+function vSavings(){
+  const p=P||{};
+  if(p.role==='cg') return vShare();
+  if(isGov(p)||isUnins(p)) return vPap();
+  if(p.enrolled||(p.role==='pt'&&p.sav==='had')) return vMyCard();
+  return chrome(`<div class="pad"><div class="card"><small>JARDIANCE</small><h3>Savings Card</h3><div class="big">$0<span>for a 30- to 90-day prescription*</span></div></div>
+   <div class="art"><p>With the JARDIANCE Savings Card, eligible commercially insured patients can pay ${OFFER}.</p></div>
+   <div class="btns"><button class="cta y" data-act="enrollStart">${p.sav==='unsure'?'Get my Savings Card':'See if I qualify'}</button>
+   ${p.sav==='unsure'?'<button class="cta o" data-go="findcard">Check if I already have one</button>':''}
+   <button class="cta o" data-go="pap">Medicare, Medicaid or no insurance?</button></div>
+   <p class="foot" style="margin-top:12px">*For eligible commercially insured patients. Card not valid for patients with Medicare, Medicaid or other government coverage, or cash-paying patients. Terms and conditions apply.</p></div>`,{head:'Pricing & Savings'});
+}
+function vEnroll(){
+  const st=UI.enr;
+  if(st===1){
+    const A=UI.att, items=[['ins','I have commercial or private prescription insurance'],['age','I am 18 years of age or older'],['us','I live in the United States'],['gov','I am not covered by Medicare, Medicaid or another government program']];
+    const all=items.every(i=>A[i[0]]);
+    return chrome(`<div class="pad">${prog(1,3)}<div class="art"><h2>Let's check eligibility</h2><p>Tap each statement that's true for you.</p></div>
+     ${items.map(i=>`<button class="chk ${A[i[0]]?'on':''}" data-act="att:${i[0]}"><span class="bx">${A[i[0]]?ic('check',13,'#fff',3):''}</span><span>${i[1]}</span></button>`).join('')}
+     <div class="btns" style="margin-top:16px"><button class="cta" ${all?'':'disabled'} data-act="enr2">Continue</button><button class="lnk" data-act="notEligible">One of these isn't true for me</button></div></div>`,{head:'Savings Card',isi:false});
+  }
+  if(st===2){
+    return chrome(`<div class="pad">${prog(2,3)}<div class="art"><h2>Where should we send your card?</h2><p>We'll text your card details so they're handy at the pharmacy.</p></div>
+     <label class="fld"><span>First name</span><input id="fn" autocomplete="given-name" placeholder="First name"></label>
+     <label class="fld"><span>Mobile number</span><input id="mob" inputmode="tel" autocomplete="tel" placeholder="(555) 555-0123"></label>
+     <button class="chk ${UI.consent?'on':''}" data-act="consent"><span class="bx">${UI.consent?ic('check',13,'#fff',3):''}</span><span style="font-size:12.5px">I agree to receive text messages from JARDIANCE Support about my Savings Card and treatment. Msg & data rates may apply. Reply STOP to cancel.</span></button>
+     <div class="btns" style="margin-top:16px"><button class="cta" data-act="enr3">Get my card</button></div>
+     <p class="foot" style="margin-top:10px">${ic('lock',12,'#5d6b78')} In production this step completes on the JARDIANCE savings site with your Patient360 session ID; nothing is submitted in this demo.</p></div>`,{head:'Savings Card',isi:false});
+  }
+  const k=P.card;
+  return chrome(`<div class="pad">${prog(3,3)}<div class="ok"><div class="c">${ic('check',32,'#0a8a82',2.6)}</div><h2>You're all set${k&&k.name?', '+k.name:''}!</h2><p>Show this card to your pharmacist at your next fill.</p></div>
+   ${cardHtml(k,'NEW')}
+   <div class="btns"><button class="cta y" data-act="wallet">Add to Wallet</button><button class="cta o" data-act="copyCard">Copy card details</button><button class="cta o" data-go="reminder">Set a refill reminder</button><button class="lnk" data-go="home">Back to home</button></div></div>`,{head:'Savings Card'});
+}
+function cardHtml(k,badge){return `<div class="card"><small>JARDIANCE</small><h3>Savings Card</h3><span class="cb">${badge}</span><div class="cd"><div>Member ID<b>${k.id}</b></div><div>Group<b>${k.grp}</b></div><div>BIN<b>${k.bin}</b></div><div>PCN<b>${k.pcn}</b></div></div></div>`}
+function vMyCard(){
+  const k=P.card||{id:'•••• 4417',grp:'••••',bin:'••••••',pcn:'••••'};
+  const st=UI.cardChecked;
+  return chrome(`<div class="pad">${cardHtml(k,P.enrolled?'ACTIVE':'ON FILE')}
+   ${st?`<div class="note b">${ic('check',14)} Status check complete: your card is active for your next fill. <span style="opacity:.7">(demo)</span></div>`:''}
+   <div class="btns"><button class="cta y" data-act="checkCard">${st?'Check again':'Check card status'}</button>
+   <button class="cta o" data-go="reminder">Set a refill reminder</button>
+   <button class="cta o" data-act="wallet">Add to Wallet</button></div>
+   <div class="sub">Something changed?</div>${rowsHtml([{t:'My insurance changed',s:'Medicare or Medicaid can’t use the card. We’ll show other options',icon:'shield',to:'updateins'},{t:'I lost my card',s:'Get your card details again',icon:'card',to:'findcard'},{t:'How to use your card at the pharmacy',icon:'q',to:'howto'}])}</div>`,{head:'My Savings Card'});
+}
+function vHowto(){return chrome(`<div class="pad art"><h2>Using your card at the pharmacy</h2><ul><li>Show your Savings Card along with your insurance card when you fill your JARDIANCE prescription.</li><li>Your pharmacist runs your insurance first, then applies the card to lower your out-of-pocket cost.</li><li>Keep the card details on your phone so you always have them.</li></ul><p class="foot">Terms and conditions apply. Not valid for government-insured or cash-paying patients.</p></div>`,{head:'How it works'})}
+function vFind(){
+  if(UI.found==='none') return chrome(`<div class="pad"><div class="ok"><div class="c">${ic('q',30)}</div><h2>We couldn't find a card</h2><p>No problem. If you're eligible, you can get one now.</p></div><div class="btns"><button class="cta y" data-act="enrollStart">Get my Savings Card</button><button class="lnk" data-go="home">Back to home</button></div></div>`,{head:'Find my card'});
+  return chrome(`<div class="pad"><div class="art"><h2>Find my card</h2><p>Enter the mobile number you used to sign up and we'll look it up.</p></div>
+   <label class="fld"><span>Mobile number</span><input id="findmob" inputmode="tel" placeholder="(555) 555-0123"></label>
+   <button class="cta" data-act="findGo">Look up my card</button><p class="foot" style="margin-top:10px">Demo: lookup is simulated.</p></div>`,{head:'Find my card'});
+}
+function vPap(){
+  const p=P||{}; const lbl={mcare:'Medicare',mcaid:'Medicaid',none:'no insurance'}[p.ins];
+  // Source: patient.boehringer-ingelheim.com/us/products/jardiance/heart-failure/pricing (fetched 2026-11-15)
+  return chrome(`<div class="pad">${lbl?`<div class="note">Because you have ${lbl}, the Savings Card isn't available. Here are options that may help.</div>`:''}
+   ${!p.ins||p.ins==='mcare'?`<div class="sub">If you have Medicare Part D</div><div class="stats"><div class="stat"><b>59%</b><span>of Part D patients pay $0–$50 a month</span></div><div class="stat"><b>$4–$10</b><span>average monthly cost with Extra Help</span></div></div><p class="foot">The remaining 41% pay about $169 a month on average. Costs can vary through the year depending on your Part D benefit phase.</p>`:''}
+   <div class="sub">Patient assistance</div>
+   <div class="contact"><b>Boehringer Ingelheim Cares Foundation</b><br>Provides medicines free of charge to eligible patients.<br>1-800-556-8317 · 8:30 a.m.–6:00 p.m. ET<br><a href="https://www.bipatientassistance.com" target="_blank" rel="noopener">See if you qualify at bipatientassistance.com</a></div>
+   ${rowsHtml([{t:'Questions to ask about cost',s:'Add them to your Doctor Discussion Guide',icon:'doc',to:'ddg'},{t:'Wrong coverage? Update it',icon:'shield',to:'updateins'}])}</div>`,{head:'Ways to save'});
+}
+function vShare(){
+  const msg=`I found savings for JARDIANCE. Eligible patients with commercial insurance can pay ${OFFER}. You can sign up here: jrd.support/save`;
+  return chrome(`<div class="pad"><div class="card"><small>For your loved one</small><h3>JARDIANCE Savings Card</h3><div class="big">$0<span>for a 30- to 90-day prescription*</span></div></div>
+   <div class="note b">Only the patient can sign up for the Savings Card. Send them the link and they can finish in a few minutes.</div>
+   <label class="fld"><span>Message to send</span><textarea id="shareTxt" rows="4">${msg}</textarea></label>
+   <div class="btns"><button class="cta y" data-act="shareCopy">Copy message</button><button class="cta o" data-go="pap">They have Medicare, Medicaid or no insurance</button></div>
+   <p class="foot" style="margin-top:12px">*For eligible commercially insured patients. Terms and conditions apply.</p></div>`,{head:'Help them save'});
+}
+
+/* =====================================================================
+   10. RENDER + EVENTS
+   ===================================================================== */
+const NEEDS_Q=['q1','q2','q3','q4'];
+function render(){
+  const v=document.getElementById('view'); let r=route(); let h;
+  if(building){v.innerHTML=vBuilding();return}
+  if(!r) r=P?'home':'start';
+  if(!P && !['start','q1','q2','q3','q4'].includes(r)) r='start';
+  if(r==='start') h=vStart();
+  else if(r==='q1') h=vQ1(); else if(r==='q2') h=vQ2(); else if(r==='q3') h=vQ3(); else if(r==='q4'||r==='updateins') {if(r==='updateins'){UI.insOnly=true;D={...P,conds:[...P.conds],unsure:false};} h=vQ4();}
+  else if(r==='home') h=vHome();
+  else if(r.startsWith('cond-')) h=vCond(r.slice(5));
+  else if(r.startsWith('hub-')){const [,c,k]=r.split('-');h=vHub(c,k)}
+  else if(r==='taking') h=vHub(null,'taking');
+  else if(r.startsWith('art-taking-')) h=vArt(null,'taking',+r.split('-')[2]);
+  else if(r.startsWith('art-')){const [,c,k,i]=r.split('-');h=vArt(c,k,+i)}
+  else if(r==='treat') h=P.conds[0]?vTreat():vHome();
+  else if(r==='faqs') h=vFaqs(); else if(r==='support') h=vSupport(); else if(r==='cg') h=vCg();
+  else if(r==='ddg') h=vDdg(); else if(r==='reminder') h=vReminder();
+  else if(r==='savings') h=vSavings(); else if(r==='enroll') h=vEnroll(); else if(r==='findcard') h=vFind();
+  else if(r==='pap') h=vPap(); else if(r==='howto') h=vHowto();
+  else h=vHome();
+  v.innerHTML=h;
+  track('page_view',{page:r});
+}
+
+function begin(){D={role:null,conds:[],sav:null,ins:null,unsure:false,pendingCond:null};UI.insOnly=false;track('qualifier_start');nav('q1')}
+function finish(){
+  commit(); building=true; render();
+  setTimeout(()=>{building=false; depth=0; location.replace('#home'); render()},1100);
+}
+function afterCond(){
+  if(D.role==='cg') return finish();
+  if(ENTRY.crm!=='unknown'){D.sav=ENTRY.crm; if(D.sav==='had') return finish(); return nav('q4')}
+  nav('q3');
+}
+
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');
+  if(g){ if(g.dataset.msg) track('personal_message_click',{slot:g.dataset.msg,to:g.dataset.go}); else track('tile_click',{to:g.dataset.go}); nav(g.dataset.go); return }
+  const a=e.target.closest('[data-act]'); if(!a) return;
+  const [act,arg,arg2]=a.dataset.act.split(':');
+  switch(act){
+    case 'begin': begin(); break;
+    case 'skip': D={role:'explore',conds:[],sav:null,ins:null}; track('qualifier_skip'); finish(); break;
+    case 'back': goBack(); break;
+    case 'change': UI.insOnly=false; D={role:null,conds:[],sav:null,ins:null,unsure:false,pendingCond:null}; nav('q1'); break;
+    case 'tailor': D={role:null,conds:[],sav:null,ins:null,unsure:false,pendingCond:arg}; track('tailor_from_hub',{cond:arg}); nav('q1'); break;
+    case 'role':
+      D.role=arg; track('answer',{q:'role',a:arg});
+      if(arg==='explore') return finish();
+      if(D.pendingCond){D.conds=[D.pendingCond];D.pendingCond=null;return afterCond()}
+      nav('q2'); break;
+    case 'cond':
+      if(arg==='unsure'){D.unsure=!D.unsure; if(D.unsure) D.conds=[]}
+      else {D.unsure=false; const i=D.conds.indexOf(arg); i>-1?D.conds.splice(i,1):D.conds.push(arg)}
+      render(); break;
+    case 'condNext': track('answer',{q:'conditions',a:D.unsure?'unsure':D.conds}); if(D.unsure){D.conds=[];return finish()} afterCond(); break;
+    case 'sav': D.sav=arg; track('answer',{q:'savings',a:arg}); if(arg==='had') return finish(); nav('q4'); break;
+    case 'ins': D.ins=arg; track('answer',{q:'coverage',a:arg});
+      if(UI.insOnly){UI.insOnly=false; if(arg==='comm'&&D.sav!=='had') D.sav='none'; commit(); toast('Coverage updated'); depth=0; location.replace('#savings'); return}
+      finish(); break;
+    case 'acc': a.parentElement.classList.toggle('open'); break;
+    case 'toggleIsi': document.getElementById('isi').classList.toggle('open'); track('isi_expand'); break;
+    case 'toggleInd': document.getElementById('ind').classList.toggle('open'); break;
+    // savings
+    case 'enrollStart': UI.enr=1; UI.att={}; UI.consent=false; track('savings_enroll_start'); nav('enroll'); break;
+    case 'att': UI.att[arg]=!UI.att[arg]; render(); break;
+    case 'notEligible': track('savings_ineligible'); location.replace('#pap'); break;
+    case 'enr2': UI.enr=2; render(); toTop(); break;
+    case 'consent': {const fn=document.getElementById('fn').value, mb=document.getElementById('mob').value; UI.consent=!UI.consent; render(); document.getElementById('fn').value=fn; document.getElementById('mob').value=mb; break}
+    case 'enr3': {
+      const fn=(document.getElementById('fn').value||'').trim().slice(0,30);
+      // Demo values only: real Member ID/BIN/PCN/Group are returned by the JARDIANCE savings API callback.
+      const card={name:fn.replace(/[<>&"]/g,''),id:'JRD'+Math.floor(10000000+Math.random()*89999999),grp:'EC'+Math.floor(1000+Math.random()*8999),bin:'610020',pcn:'PDMI'};
+      if(!P){P={role:'pt',conds:[],sav:null,ins:'comm'}}
+      P.enrolled=true; P.card=card; P.ins='comm'; if(P.role==='pt') P.sav='had'; store.set('profile',P); track('savings_enroll_complete');
+      UI.enr=3; render(); toTop(); break}
+    case 'wallet': toast('Demo: card would be added to Apple Wallet / Google Wallet.'); track('wallet_add'); break;
+    case 'copyCard': {const k=P.card; copy(`JARDIANCE Savings Card\nMember ID: ${k.id}\nGroup: ${k.grp}\nBIN: ${k.bin}\nPCN: ${k.pcn}`,'Card details'); break}
+    case 'checkCard': UI.cardChecked=true; track('savings_card_check'); render(); break;
+    case 'findGo': UI.found='none'; track('savings_card_lookup'); render(); break;
+    case 'shareCopy': copy(document.getElementById('shareTxt').value,'Message'); track('caregiver_share_savings'); break;
+    // DDG
+    case 'ddgc': UI.ddgC=arg; render(); break;
+    case 'ddgq': {const s=store.get('ddg',{c:null,q:[],notes:''}); if(s.c!==UI.ddgC){s.c=UI.ddgC;s.q=[];s.notes=''} const i=+arg; s.q.includes(i)?s.q.splice(s.q.indexOf(i),1):s.q.push(i); const n=document.getElementById('ddgNotes'); if(n) s.notes=n.value; store.set('ddg',s); render(); break}
+    case 'ddgSave': {const s=store.get('ddg',{c:UI.ddgC,q:[],notes:''}); s.c=UI.ddgC; s.notes=document.getElementById('ddgNotes').value; store.set('ddg',s); track('ddg_save',{n:s.q.length}); toast('Your guide is saved on this device.'); break}
+    case 'ddgCopy': {const s=store.get('ddg',{c:UI.ddgC,q:[],notes:''}); const C=COND[UI.ddgC]; const qs=(s.c===UI.ddgC?s.q:[]).sort().map(i=>'• '+C.ddg[i]); const notes=document.getElementById('ddgNotes').value; copy(`My questions about ${C.lower}:\n${qs.join('\n')||'(none selected)'}${notes?`\n\nNotes: ${notes}`:''}`,'Questions'); break}
+    // reminders
+    case 'rem': UI.rem[arg]=a.dataset.act.split(':').slice(2).join(':'); render(); break;
+    case 'remSave': store.set('reminder',UI.rem); track('reminder_set',UI.rem); toast('Reminder saved.'); render(); break;
+    // demo tools
+    case 'demo': openDemo(); break;
+    case 'closeSheet': closeSheet(); break;
+    case 'dch': ENTRY.ch=arg; store.set('entry',ENTRY); openDemo(); break;
+    case 'dcrm': ENTRY.crm=arg; store.set('entry',ENTRY); openDemo(); break;
+    case 'djump': jump(arg); break;
+    case 'dreset': store.clear(); P=null; ENTRY={ch:ENTRY.ch,crm:ENTRY.crm}; store.set('entry',ENTRY); UI={enr:1,att:{},cardChecked:false,found:null}; closeSheet(); depth=0; location.replace('#start'); render(); break;
+  }
+});
+
+function toTop(){document.getElementById('view').scrollTop=0;try{window.scrollTo(0,0)}catch(e){}}
+/* ---------- demo tools sheet (presenter only) ---------- */
+const SEGS=[['S1','Generic',{role:'explore',conds:[]}],['S2a','T2D · had card',{role:'pt',conds:['t2d'],sav:'had'}],['S2b','T2D · no card',{role:'pt',conds:['t2d'],sav:'none',ins:'comm'}],['S3a','HF · had card',{role:'pt',conds:['hf'],sav:'had'}],['S3b','HF · no card',{role:'pt',conds:['hf'],sav:'none',ins:'comm'}],['S4a','CKD · had card',{role:'pt',conds:['ckd'],sav:'had'}],['S4b','CKD · no card',{role:'pt',conds:['ckd'],sav:'none',ins:'comm'}],['S5','Caregiver · T2D',{role:'cg',conds:['t2d']}],['S6','Caregiver · HF',{role:'cg',conds:['hf']}],['S7','Caregiver · CKD',{role:'cg',conds:['ckd']}],['S3b+','HF · Medicare',{role:'pt',conds:['hf'],sav:'none',ins:'mcare'}],['S2b+','T2D + CKD · no card',{role:'pt',conds:['t2d','ckd'],sav:'none',ins:'comm'}]];
+function openDemo(){
+  const s=document.getElementById('sheet'), cur=P?segId(P):'—';
+  s.innerHTML=`<h3>Demo tools</h3><div class="hint">For presenters. Current segment: <b>${cur}</b></div>
+   <div class="lbl">Entry link</div><div class="seg"><button class="${ENTRY.ch==='email'?'on':''}" data-act="dch:email">Email</button><button class="${ENTRY.ch==='sms'?'on':''}" data-act="dch:sms">SMS</button></div>
+   <div class="lbl">Savings history known from CRM</div><div class="seg"><button class="${ENTRY.crm==='unknown'?'on':''}" data-act="dcrm:unknown">Unknown</button><button class="${ENTRY.crm==='had'?'on':''}" data-act="dcrm:had">Had card</button><button class="${ENTRY.crm==='none'?'on':''}" data-act="dcrm:none">No card</button></div>
+   <div class="lbl">Jump to a segment</div><div class="sgrid">${SEGS.map(x=>`<button data-act="djump:${x[0]}"><b>${x[0]}</b>${x[1]}</button>`).join('')}</div>
+   <button class="cta" style="margin-top:14px" data-act="dreset">Reset and start over</button>`;
+  s.classList.add('on'); document.getElementById('sheetbg').classList.add('on');
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetbg').classList.remove('on')}
+function jump(id){const x=SEGS.find(s=>s[0]===id);P={sav:null,ins:null,enrolled:false,card:null,...x[2],conds:[...x[2].conds]};store.set('profile',P);UI.cardChecked=false;UI.found=null;closeSheet();depth=0;location.replace('#home');render();toTop()}
+
+/* ---------- boot: read entry token from the link ---------- */
+(function boot(){
+  const r=route();
+  if(TOKENS.includes(r)){
+    const [ch,crm]=r.split('-'); ENTRY={ch,crm:crm||'unknown'}; store.set('entry',ENTRY);
+    track('reengagement_link_open',{channel:ch,crm:ENTRY.crm});
+    history.replaceState(null,'',P?'#home':'#start');
+  }
+  render();
+})();
+</script>
+</body>
+</html>
