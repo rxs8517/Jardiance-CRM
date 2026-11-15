@@ -201,6 +201,7 @@ a{color:var(--teal)}
 </style>
 </head>
 <body>
+<script src="config.js"></script>
 <div class="frame"><div class="app" id="app">
   <div class="sbar"><span>12:22</span><div class="notch"></div>
     <svg width="44" height="12" viewBox="0 0 44 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#111"/><rect x="4.5" y="6" width="3" height="6" rx="1" fill="#111"/><rect x="9" y="3.5" width="3" height="8.5" rx="1" fill="#111"/><rect x="13.5" y="1" width="3" height="11" rx="1" fill="#111"/><rect x="20.5" y="1" width="21" height="10" rx="3" fill="none" stroke="#111"/><rect x="22" y="2.5" width="18" height="7" rx="1.5" fill="#111"/></svg>
@@ -367,13 +368,35 @@ const LOGO=`<svg width="190" height="60" viewBox="0 0 190 60" role="img" aria-la
 /* =====================================================================
    3. STATE, PERSISTENCE, ANALYTICS
    ===================================================================== */
-const store={get(k,d){try{const v=localStorage.getItem('jrd_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('jrd_'+k,JSON.stringify(v))}catch(e){}},clear(){try{Object.keys(localStorage).filter(k=>k.startsWith('jrd_')).forEach(k=>localStorage.removeItem(k))}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem('jrd_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('jrd_'+k,JSON.stringify(v))}catch(e){}},clear(){try{Object.keys(localStorage).filter(k=>k.startsWith('jrd_')&&!['jrd_log','jrd_endpoint','jrd_since'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}}};
 let P=store.get('profile',null);          // committed profile: {role,conds,sav,ins,enrolled,card}
 let D={role:null,conds:[],sav:null,ins:null,unsure:false,pendingCond:null}; // draft answers during qualifier
 let ENTRY=store.get('entry',{ch:'email',crm:'unknown'});
 let UI={enr:1,att:{},cardChecked:false,found:null,back:'home'};
+/* ---------- tracking ----------
+   Every interaction is (1) pushed to window.dataLayer, (2) mirrored to a capped local log that
+   dashboard.html reads on the same origin, and (3) batched to the collector in config.js if one is set.
+   No names, phone numbers or free text are ever sent: only anonymous IDs, segment and click targets. */
 window.dataLayer=window.dataLayer||[];
-function track(ev,data={}){const e={event:ev,segment:P?segId(P):null,channel:ENTRY.ch,ts:new Date().toISOString(),...data};window.dataLayer.push(e)}
+const newId=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+let UID=store.get('uid',null); if(!UID){UID=newId();store.set('uid',UID)}
+let SID=newId();
+const ENDPOINT=(()=>{try{return localStorage.getItem('jrd_endpoint')||(window.JRD_TRACKING&&window.JRD_TRACKING.endpoint)||''}catch(e){return (window.JRD_TRACKING&&window.JRD_TRACKING.endpoint)||''}})();
+let OUTQ=[], flushT=null;
+function track(ev,data={}){
+  const e={ts:new Date().toISOString(),uid:UID,sid:SID,event:ev,segment:P?segId(P):'',channel:ENTRY.ch,crm:ENTRY.crm,page:(location.hash||'#start').slice(1),data};
+  window.dataLayer.push(e);
+  try{const L=JSON.parse(localStorage.getItem('jrd_log')||'[]');L.push(e);localStorage.setItem('jrd_log',JSON.stringify(L.slice(-5000)))}catch(x){}
+  if(ENDPOINT){OUTQ.push(e);clearTimeout(flushT);flushT=setTimeout(flush,1500)}
+}
+function flush(useBeacon){
+  if(!ENDPOINT||!OUTQ.length) return; const body=JSON.stringify(OUTQ); OUTQ=[];
+  try{ if(useBeacon&&navigator.sendBeacon) navigator.sendBeacon(ENDPOINT,new Blob([body],{type:'text/plain;charset=utf-8'}));
+       else fetch(ENDPOINT,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body}); }catch(x){}
+}
+window.addEventListener('pagehide',()=>flush(true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush(true)});
+function segAssigned(how){track('segment_assigned',{how,role:P.role,conds:P.conds,sav:P.sav,ins:P.ins})}
 
 function segId(p){
   if(!p||!p.role||p.role==='explore'||!p.conds.length) return 'S1';
@@ -385,7 +408,7 @@ const isGov=p=>p&&(p.ins==='mcare'||p.ins==='mcaid');
 const isUnins=p=>p&&p.ins==='none';
 function commit(){
   P={role:D.role==='explore'?'explore':D.role,conds:[...D.conds],sav:D.sav,ins:D.ins,enrolled:P&&P.enrolled||false,card:P&&P.card||null,ts:Date.now()};
-  store.set('profile',P); track('qualifier_complete',{answers:{role:P.role,conds:P.conds,sav:P.sav,ins:P.ins}});
+  store.set('profile',P); track('qualifier_complete',{role:P.role,conds:P.conds,sav:P.sav,ins:P.ins}); segAssigned('qualifier');
 }
 
 /* =====================================================================
@@ -743,9 +766,9 @@ document.addEventListener('click',e=>{
     case 'ins': D.ins=arg; track('answer',{q:'coverage',a:arg});
       if(UI.insOnly){UI.insOnly=false; if(arg==='comm'&&D.sav!=='had') D.sav='none'; commit(); toast('Coverage updated'); depth=0; location.replace('#savings'); return}
       finish(); break;
-    case 'acc': a.parentElement.classList.toggle('open'); break;
+    case 'acc': a.parentElement.classList.toggle('open'); if(a.parentElement.classList.contains('open')) track('faq_open',{q:a.textContent.trim().slice(0,80)}); break;
     case 'toggleIsi': document.getElementById('isi').classList.toggle('open'); track('isi_expand'); break;
-    case 'toggleInd': document.getElementById('ind').classList.toggle('open'); break;
+    case 'toggleInd': document.getElementById('ind').classList.toggle('open'); track('indication_expand'); break;
     // savings
     case 'enrollStart': UI.enr=1; UI.att={}; UI.consent=false; track('savings_enroll_start'); nav('enroll'); break;
     case 'att': UI.att[arg]=!UI.att[arg]; render(); break;
@@ -757,7 +780,7 @@ document.addEventListener('click',e=>{
       // Demo values only: real Member ID/BIN/PCN/Group are returned by the JARDIANCE savings API callback.
       const card={name:fn.replace(/[<>&"]/g,''),id:'JRD'+Math.floor(10000000+Math.random()*89999999),grp:'EC'+Math.floor(1000+Math.random()*8999),bin:'610020',pcn:'PDMI'};
       if(!P){P={role:'pt',conds:[],sav:null,ins:'comm'}}
-      P.enrolled=true; P.card=card; P.ins='comm'; if(P.role==='pt') P.sav='had'; store.set('profile',P); track('savings_enroll_complete');
+      P.enrolled=true; P.card=card; P.ins='comm'; if(P.role==='pt') P.sav='had'; store.set('profile',P); track('savings_enroll_complete'); segAssigned('enrollment');
       UI.enr=3; render(); toTop(); break}
     case 'wallet': toast('Demo: card would be added to Apple Wallet / Google Wallet.'); track('wallet_add'); break;
     case 'copyCard': {const k=P.card; copy(`JARDIANCE Savings Card\nMember ID: ${k.id}\nGroup: ${k.grp}\nBIN: ${k.bin}\nPCN: ${k.pcn}`,'Card details'); break}
@@ -773,12 +796,12 @@ document.addEventListener('click',e=>{
     case 'rem': UI.rem[arg]=a.dataset.act.split(':').slice(2).join(':'); render(); break;
     case 'remSave': store.set('reminder',UI.rem); track('reminder_set',UI.rem); toast('Reminder saved.'); render(); break;
     // demo tools
-    case 'demo': openDemo(); break;
+    case 'demo': openDemo(); track('demo_tools_open'); break;
     case 'closeSheet': closeSheet(); break;
     case 'dch': ENTRY.ch=arg; store.set('entry',ENTRY); openDemo(); break;
     case 'dcrm': ENTRY.crm=arg; store.set('entry',ENTRY); openDemo(); break;
     case 'djump': jump(arg); break;
-    case 'dreset': store.clear(); P=null; ENTRY={ch:ENTRY.ch,crm:ENTRY.crm}; store.set('entry',ENTRY); UI={enr:1,att:{},cardChecked:false,found:null}; closeSheet(); depth=0; location.replace('#start'); render(); break;
+    case 'dreset': track('user_restart'); flush(); store.clear(); P=null; UID=newId(); store.set('uid',UID); SID=newId(); ENTRY={ch:ENTRY.ch,crm:ENTRY.crm}; store.set('entry',ENTRY); track('session_start',{via:'restart'}); UI={enr:1,att:{},cardChecked:false,found:null}; closeSheet(); depth=0; location.replace('#start'); render(); break;
   }
 });
 
@@ -791,20 +814,23 @@ function openDemo(){
    <div class="lbl">Entry link</div><div class="seg"><button class="${ENTRY.ch==='email'?'on':''}" data-act="dch:email">Email</button><button class="${ENTRY.ch==='sms'?'on':''}" data-act="dch:sms">SMS</button></div>
    <div class="lbl">Savings history known from CRM</div><div class="seg"><button class="${ENTRY.crm==='unknown'?'on':''}" data-act="dcrm:unknown">Unknown</button><button class="${ENTRY.crm==='had'?'on':''}" data-act="dcrm:had">Had card</button><button class="${ENTRY.crm==='none'?'on':''}" data-act="dcrm:none">No card</button></div>
    <div class="lbl">Jump to a segment</div><div class="sgrid">${SEGS.map(x=>`<button data-act="djump:${x[0]}"><b>${x[0]}</b>${x[1]}</button>`).join('')}</div>
-   <button class="cta" style="margin-top:14px" data-act="dreset">Reset and start over</button>`;
+   <button class="cta" style="margin-top:14px" data-act="dreset">Restart as a new user</button>
+   <a class="lnk" href="dashboard.html" target="_blank" rel="noopener">Open tracking dashboard ↗</a>
+   <div class="hint" style="margin-top:8px;text-align:center">User ${UID} · ${ENDPOINT?'sending to collector':'local tracking only'}</div>`;
   s.classList.add('on'); document.getElementById('sheetbg').classList.add('on');
 }
 function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetbg').classList.remove('on')}
-function jump(id){const x=SEGS.find(s=>s[0]===id);P={sav:null,ins:null,enrolled:false,card:null,...x[2],conds:[...x[2].conds]};store.set('profile',P);UI.cardChecked=false;UI.found=null;closeSheet();depth=0;location.replace('#home');render();toTop()}
+function jump(id){const x=SEGS.find(s=>s[0]===id);P={sav:null,ins:null,enrolled:false,card:null,...x[2],conds:[...x[2].conds]};store.set('profile',P);track('demo_jump',{to:id});segAssigned('demo_jump');UI.cardChecked=false;UI.found=null;closeSheet();depth=0;location.replace('#home');render();toTop()}
 
 /* ---------- boot: read entry token from the link ---------- */
 (function boot(){
-  const r=route();
+  const r=route(); const via=TOKENS.includes(r)?'link':'direct';
   if(TOKENS.includes(r)){
     const [ch,crm]=r.split('-'); ENTRY={ch,crm:crm||'unknown'}; store.set('entry',ENTRY);
     track('reengagement_link_open',{channel:ch,crm:ENTRY.crm});
     history.replaceState(null,'',P?'#home':'#start');
   }
+  track('session_start',{via,returning:!!P});
   render();
 })();
 </script>
